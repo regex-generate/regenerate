@@ -57,6 +57,10 @@ val nth_opt : 'a t -> int -> 'a option
 
 val of_list : 'a list -> 'a t
 
+val sorted_merge_n : 
+  ?cmp:('a -> 'a -> int) ->
+  'a t t -> 'a t
+
 module Infix : sig
   val (--) : int -> int -> int t
   val (>>=) : 'a t -> ('a -> 'b t) -> 'b t

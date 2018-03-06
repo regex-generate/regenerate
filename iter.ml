@@ -130,6 +130,70 @@ let of_list l =
   in
   aux l
 
+
+(** {4 Mutable heap (taken from heap.ml to avoid dependencies)} *)
+module Heap = struct
+  type 'a t = {
+    tree : 'a tree;
+    cmp : 'a -> 'a -> int;
+  } (** A pairing tree heap with the given comparison function *)
+
+  and 'a tree =
+    | Empty
+    | Node of 'a * 'a tree * 'a tree
+
+  let empty ~cmp = {
+    tree = Empty;
+    cmp;
+  }
+
+  let is_empty h =
+    match h.tree with
+    | Empty -> true
+    | Node _ -> false
+
+  let rec union ~cmp t1 t2 = match t1, t2 with
+    | Empty, _ -> t2
+    | _, Empty -> t1
+    | Node (x1, l1, r1), Node (x2, l2, r2) ->
+        if cmp x1 x2 <= 0
+        then Node (x1, union ~cmp t2 r1, l1)
+        else Node (x2, union ~cmp t1 r2, l2)
+
+  let insert h x =
+    { h with tree = union ~cmp:h.cmp (Node (x, Empty, Empty)) h.tree }
+
+  let pop h = match h.tree with
+    | Empty -> raise Not_found
+    | Node (x, l, r) ->
+      x, { h with tree = union ~cmp:h.cmp l r }
+end
+
+let sorted_merge_n ?(cmp=Pervasives.compare) l =
+  (* make a heap of (value, generator) *)
+  let cmp (v1,_) (v2,_) = cmp v1 v2 in
+  (* add initial values *)
+  let h0 = fold_left
+    (fun h s -> match s() with
+       | Cons (x, s') -> Heap.insert h (x, s')
+       | Nil -> h)
+    (Heap.empty ~cmp)
+    l
+  in
+  let rec f heap () =
+    if Heap.is_empty heap then Nil
+    else begin
+      let (x, seq), heap = Heap.pop heap in
+      match seq() with
+      | Cons (y, seq') ->
+          let heap = Heap.insert heap (y, seq') in  (* insert next value *)
+          Cons (x, f heap)
+      | Nil ->
+        Cons (x, f heap) (* gen empty, drop it *)
+    end
+  in
+  f h0
+
 module Infix = struct
   let (--) = range
   let (>>=) x f = flat_map f x

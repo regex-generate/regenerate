@@ -30,12 +30,12 @@ module Make (C : CHAR) (W : WORD with type char := C.t) = struct
 
   type lang = W.t Iter.t
 
-  let rec iter_partitions n =
-    if n = 0 then Iter.return Iter.empty
+  let rec iter_partitions n () =
+    if n = 0 then Iter.return Iter.empty ()
     else
-      1 -- n >>= fun i ->
+      (1 -- n >>= fun i ->
       iter_partitions (n - i) >|= fun s ->
-      i @: s
+      i @: s) ()
   
   type drop = Drop | Keep
   let dropX s s' = function Drop -> s' | Keep -> s
@@ -79,7 +79,7 @@ module Make (C : CHAR) (W : WORD with type char := C.t) = struct
     in
     merge_with id drop f
 
-  let union_n = Iter.fold_left union Iter.empty
+  let union_n = Iter.sorted_merge_n ~cmp:W.compare
 
   (** Concatenation *)
   
@@ -133,12 +133,12 @@ module Make (C : CHAR) (W : WORD with type char := C.t) = struct
   let star seq =
     let is_infinite = Iter.exists (fun w -> W.length w > 0) seq in
     let segms = segmentize_infite seq in
-    let rec words_of_partition p = match p () with
-      | Iter.Nil -> Iter.return W.empty
+    let rec words_of_partition p () = match p () with
+      | Iter.Nil -> Iter.return W.empty ()
       | Cons (i, p') ->
-        Iter.nth segms i >>= fun w' ->
-        words_of_partition p' >>= fun w ->
-        Iter.return (W.append w w')
+        (words_of_partition p' >>= fun w ->
+         Iter.nth segms i >>= fun w' ->
+         Iter.return (W.append w w')) ()
     in
     let subterm_of_length n =
       union_n @@ Iter.map words_of_partition @@ iter_partitions n
