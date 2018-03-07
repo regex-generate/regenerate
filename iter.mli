@@ -17,54 +17,51 @@
 
 (** @since NEXT_RELEASE *)
 
-type +'a node =
-  | Nil
-  | Cons of 'a * 'a t
+type (+'a,+'e) node =
+  | Nil of 'e
+  | Cons of 'a * ('a, 'e) t
 
-and 'a t = unit -> 'a node
+and ('a, 'e) t = unit -> ('a, 'e) node
 
-val empty : 'a t
+val empty : ('a, 'e) t
 
-val cons : 'a -> 'a t -> 'a t
+val cons : 'a -> ('a, 'e) t -> ('a, 'e) t
 
-val return : 'a -> 'a t
+val return : 'a -> ('a, 'e) t
 
-val map : ('a -> 'b) -> 'a t -> 'b t
+val map : ('a -> 'b) -> ('a, 'e) t -> ('b, 'e) t
+val map2 : ('a -> 'b -> 'c) -> ('a, 'e) t -> ('b, 'e) t -> ('c, 'e) t
 
-val filter : ('a -> bool) -> 'a t -> 'a t
+(* val flat_map : ('a -> 'b t) -> 'a t -> 'b t
+ * 
+ * val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a *)
 
-val filter_map : ('a -> 'b option) -> 'a t -> 'b t
+(* val iter : ('a -> unit) -> ('a, 'e) t -> unit *)
 
-val flat_map : ('a -> 'b t) -> 'a t -> 'b t
+(* val append : 'a t -> 'a t -> 'a t *)
 
-val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
+(* val take_while : ('a -> bool) -> ('a, 'e) t -> ('a, 'e) t
+ *     
+ * val drop_while : ('a -> bool) -> ('a, 'e) t -> ('a, 'e) t *)
 
-val iter : ('a -> unit) -> 'a t -> unit
+val for_all : ('a -> bool) -> ('a, 'e) t -> bool
+val exists : ('a -> bool) -> ('a, 'e) t -> bool
 
-val append : 'a t -> 'a t -> 'a t
+(* val range : int -> int -> int t *)
 
-val take_while : ('a -> bool) -> 'a t -> 'a t
-    
-val drop_while : ('a -> bool) -> 'a t -> 'a t
+val nth : ('a, 'e) t -> int -> 'a
+val nth_opt : ('a, 'e) t -> int -> 'a option
 
-val for_all : ('a -> bool) -> 'a t -> bool
-val exists : ('a -> bool) -> 'a t -> bool
+val of_list : 'a list -> ('a, 'e) t
 
-val range : int -> int -> int t
-
-val nth : 'a t -> int -> 'a
-val nth_opt : 'a t -> int -> 'a option
-
-val of_list : 'a list -> 'a t
-
-val sorted_merge_n : 
-  ?cmp:('a -> 'a -> int) ->
-  'a t t -> 'a t
+(* val sorted_merge_n : 
+ *   ?cmp:('a -> 'a -> int) ->
+ *   'a t t -> 'a t *)
 
 module Infix : sig
-  val (--) : int -> int -> int t
-  val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
-  val (>|=) : 'a t -> ('a -> 'b) -> 'b t
-  val (@) : 'a t -> 'a t -> 'a t
-  val (@:) : 'a -> 'a t -> 'a t
+  (* val (--) : int -> int -> int t *)
+  (* val (>>=) : 'a t -> ('a -> 'b t) -> 'b t
+   * val (>|=) : 'a t -> ('a -> 'b) -> 'b t
+   * val (@@@) : 'a t -> 'a t -> 'a t *)
+  val (@:) : 'a -> ('a, 'e) t -> ('a, 'e) t
 end

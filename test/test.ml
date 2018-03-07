@@ -5,7 +5,8 @@ module S = Make (Char) (W)
 
 let () =
   (* let re = S.(Seq (Not (Atom 'a'), Atom 'a')) in *)
-  let re = S.(Star (Atom 'a')) in
+  (* let re = S.(Star (Atom 'a')) in *)
+  let re = S.(Star (Seq (Atom 'a', Star (Atom 'b')))) in
   let sigma = Iter.of_list ['a'; 'b' ; 'c'] in
   S.gen sigma re |>
   Iter.take_while (fun i -> W.length i < 20) |>
