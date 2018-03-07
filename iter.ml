@@ -16,83 +16,93 @@
 (* Module [Seq]: functional iterators *)
 
 type (+'a,+'e) node =
-  | Nil of 'e
+  | Ret of 'e
   | Cons of 'a * ('a, 'e) t
 
 and ('a, 'e) t = unit -> ('a, 'e) node
 
-let empty x () = Nil x
+let return x () = Ret x
 
 let cons e s () = Cons(e, s)
 
 (* let return x () = Cons (x, empty) *)
 
-let rec map f seq () = match seq() with
-  | Nil x-> Nil x
-  | Cons (x, next) -> Cons (f x, map f next)
+let tail s () = match s() with
+  | Ret _ -> assert false
+  | Cons (_, next) -> next ()
+                        
+let rec map f g seq () = match seq() with
+  | Ret x -> Ret (g x)
+  | Cons (x, next) -> Cons (f x, map f g next)
 
-let rec filter_map f seq () = match seq() with
-  | Nil x -> Nil x
-  | Cons (x, next) ->
-      match f x with
-        | None -> filter_map f next ()
-        | Some y -> Cons (y, filter_map f next)
+(* let rec filter_map f seq () = match seq() with
+ *   | Ret x -> Ret x
+ *   | Cons (x, next) ->
+ *       match f x with
+ *         | None -> filter_map f next ()
+ *         | Some y -> Cons (y, filter_map f next)
+ * 
+ * let rec filter f seq () = match seq() with
+ *   | Ret x -> Ret x
+ *   | Cons (x, next) ->
+ *       if f x
+ *       then Cons (x, filter f next)
+ *       else filter f next () *)
 
-let rec filter f seq () = match seq() with
-  | Nil x -> Nil x
-  | Cons (x, next) ->
-      if f x
-      then Cons (x, filter f next)
-      else filter f next ()
+let rec take n e l () =
+  if n=0 then Ret e
+  else match l () with
+    | Ret e -> Ret e
+    | Cons (x,l') -> Cons (x, take (n-1) e l')
 
 (* let rec flat_map f seq () = match seq () with
- *   | Nil -> Nil
+ *   | Ret -> Ret
  *   | Cons (x, next) ->
  *     flat_map_app f (f x) next ()
  * 
  * (\* this is [append seq (flat_map f tail)] *\)
  * and flat_map_app f seq tail () = match seq () with
- *   | Nil -> flat_map f tail ()
+ *   | Ret -> flat_map f tail ()
  *   | Cons (x, next) ->
  *     Cons (x, flat_map_app f next tail) *)
 
-(* let fold_left f acc seq =
- *   let rec aux f acc seq = match seq () with
- *     | Nil -> acc
+(* let fold f acc seq =
+ *   let rec aux f g acc seq = match seq () with
+ *     | Ret e -> g e
  *     | Cons (x, next) ->
  *         let acc = f acc x in
- *         aux f acc next
+ *         aux f g acc next
  *   in
  *   aux f acc seq *)
 
-let iter f seq =
-  let rec aux seq = match seq () with
-    | Nil x -> ()
-    | Cons (x, next) ->
-        f x;
-        aux next
-  in
-  aux seq
+(* let iter f seq =
+ *   let rec aux seq = match seq () with
+ *     | Ret x -> ()
+ *     | Cons (x, next) ->
+ *         f x;
+ *         aux next
+ *   in
+ *   aux seq *)
 
 (* let rec append s1 s2 () = match s1 () with
- *   | Nil -> s2 ()
+ *   | Ret -> s2 ()
  *   | Cons (x, next) -> Cons (x, append next s2) *)
 
 (* let rec append_node s1 s2 () = match s1 () with
- *   | Nil -> s2
+ *   | Ret -> s2
  *   | Cons (x, next) -> Cons (x, append_node next s2) *)
 
 (* let rec take_while f s () = match s () with
- *   | Nil ->
- *     Nil
+ *   | Ret ->
+ *     Ret
  *   | Cons(e, s) ->
  *     if f e then
  *       Cons(e, take_while f s)
  *     else
- *       Nil
+ *       Ret
  * 
  * let rec drop_while f s = match s () with
- *   | Nil -> empty
+ *   | Ret -> empty
  *   | Cons(e, s) ->
  *     if f e then
  *       drop_while f s
@@ -100,11 +110,11 @@ let iter f seq =
  *       cons e s *)
 
 let rec for_all f s = match s () with
-  | Nil _ -> true
+  | Ret _ -> true
   | Cons(e, s) -> f e && for_all f s
 
 let rec exists f s = match s () with
-  | Nil _ -> false
+  | Ret _ -> false
   | Cons(e, s) -> f e || exists f s
 
 (* let rec range i j =
@@ -113,19 +123,19 @@ let rec exists f s = match s () with
 
 (* let rec nth s n =
  *   match s () with
- *   | Nil -> raise Not_found
+ *   | Ret -> raise Not_found
  *   | Cons (x, s') ->
  *     if n = 0 then x else nth s' (n-1)
  *         
  * let rec nth_opt s n =
  *   match s () with
- *   | Nil -> None
+ *   | Ret -> None
  *   | Cons (x, s') ->
  *     if n = 0 then Some x else nth_opt s' (n-1) *)
 
 (* let of_list l =
  *   let rec aux l () = match l with
- *     | [] -> Nil
+ *     | [] -> Ret
  *     | x::l' -> Cons(x, aux l')
  *   in
  *   aux l *)
@@ -176,23 +186,39 @@ let rec exists f s = match s () with
  *   let h0 = fold_left
  *     (fun h s -> match s() with
  *        | Cons (x, s') -> Heap.insert h (x, s')
- *        | Nil -> h)
+ *        | Ret -> h)
  *     (Heap.empty ~cmp)
  *     l
  *   in
  *   let rec f heap () =
- *     if Heap.is_empty heap then Nil
+ *     if Heap.is_empty heap then Ret
  *     else begin
  *       let (x, seq), heap = Heap.pop heap in
  *       match seq() with
  *       | Cons (y, seq') ->
  *           let heap = Heap.insert heap (y, seq') in  (\* insert next value *\)
  *           Cons (x, f heap)
- *       | Nil ->
+ *       | Ret ->
  *         Cons (x, f heap) (\* gen empty, drop it *\)
  *     end
  *   in
  *   f h0 *)
+
+type ('a, 'e) memoize =
+  | MemoThunk
+  | MemoSave of ('a, 'e) node
+
+let rec memoize f =
+  let r = ref MemoThunk in
+  fun () -> match !r with
+    | MemoSave l -> l
+    | MemoThunk ->
+      let l = match f() with
+        | Ret x -> Ret x
+        | Cons (x, tail) -> Cons (x, memoize tail)
+      in
+      r := MemoSave l;
+      l
 
 module Infix = struct
   (* let (--) = range

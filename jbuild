@@ -3,6 +3,5 @@
 (library
  ((name re_testing)
   (wrapped false)
-  (libraries (oseq containers))
-  (preprocess (pps (ppx_deriving.std)))
+  (libraries (segments fmt sequence oseq containers))
 ))

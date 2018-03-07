@@ -13,27 +13,32 @@ module type WORD = sig
 end
 
 module type SEGMENT = sig
-  type +'a t
-  val empty : _ t
-  val return : 'a -> 'a t
-  val map : ('a -> 'b) ->  'a t -> 'b t
-  val fold : ('a -> 'b -> 'a) ->  'a -> 'b t -> 'a
-  val range : int -> int -> int t
-  val cross_product : ('a -> 'b -> 'c) -> 'a t -> 'b t -> 'c t
-  val merge : ('a -> 'a -> int) -> 'a t t -> 'a t
-  val exists : ('a -> bool) -> 'a t -> bool
-  val partitions : int -> int t t
-  val union : ('a -> 'a -> int) -> 'a t -> 'a t -> 'a t
-  val inter : ('a -> 'a -> int) -> 'a t -> 'a t -> 'a t
-  val difference : ('a -> 'a -> int) -> 'a t -> 'a t -> 'a t
+  type elt
+  type t
+  val empty : t
+  val is_empty : t -> bool
+  val return : elt -> t
+  val map : (elt -> elt) ->  t -> t
+  val cross_product : (elt -> elt -> elt) -> t -> t -> t
+
+  val union : t -> t -> t
+  val inter : t -> t -> t
+  val difference : t -> t -> t
+  val merge : t OSeq.t -> t
+
+  val of_list : elt list -> t
+  val to_seq : t -> elt Sequence.t
+
+  val memoize : t -> t
 end
 
-module Make (C : CHAR) (W : WORD with type char := C.t) (Segment : SEGMENT) = struct
+module Make (C : CHAR) (W : WORD with type char := C.t) (Segment : SEGMENT with type elt = W.t) = struct
 
-  module IntMap = CCMap.Make(CCInt)
-  
-  type word = W.t
-  
+  module M = struct
+    include CCMap.Make(CCInt)
+    let save k s m = add k (Segment.memoize s) m
+  end
+    
   type re
     = Zero
     | One
@@ -44,141 +49,113 @@ module Make (C : CHAR) (W : WORD with type char := C.t) (Segment : SEGMENT) = st
     | Not of re
     | Star of re
 
-  type rest = Nothing | Everything
-  type lang = (W.t Segment.t, rest) Iter.t
-      
-  let segment0 = Segment.return W.empty
+  type word = W.t
+  type rest = Nothing (* | Everything *)
+  type lang = (Segment.t, rest) Iter.t
+
+  (* let nothing = Iter.return Nothing *)
+  let rec nothing () = Iter.Cons (Segment.empty, nothing)
+  (* let everything = Iter.return Everything *)
   
-  (* type drop = Drop | Keep
-   * let dropX s s' = function Drop -> s' | Keep -> s
-   * let rec merge_with l r f s1 s2 () = match s1 (), s2 () with
-   *   | Iter.Nil, Iter.Nil -> Iter.Nil
-   *   | Cons _, Nil -> l s1 ()
-   *   | Nil, Cons _ -> r s2 ()
-   *   | Cons (x1, s1'), Cons (x2, s2') ->
-   *     let d1, d2, res = f x1 x2 in
-   *     let k = merge_with l r f (dropX s1 s1' d1) (dropX s2 s2' d2) in
-   *     match res with
-   *     | Some x -> Cons (x, k)
-   *     | None -> k ()
-   * let keep x = x
-   * let drop _ = Iter.empty
-   * 
-   * let union =
-   *   let f x y =
-   *     let i = W.compare x y in
-   *     if i = 0 then      Drop, Drop, Some x
-   *     else if i < 0 then Drop, Keep, Some x
-   *     else               Keep, Drop, Some x
-   *   in
-   *   merge_with keep keep f
-   *     
-   * let intersection =
-   *   let f x y =
-   *     let i = W.compare x y in
-   *     if i = 0 then      Drop, Drop, Some x
-   *     else if i < 0 then Drop, Keep, None
-   *     else               Keep, Drop, None
-   *   in
-   *   merge_with drop drop f
-   * 
-   * let difference =
-   *   let f x y =
-   *     let i = W.compare x y in
-   *     if i = 0 then      Drop, Drop, None
-   *     else if i < 0 then Drop, Keep, Some x
-   *     else               Keep, Drop, None
-   *   in
-   *   merge_with keep drop f *)
+  let segment0 = Segment.return W.empty
 
-  (* let union_n = Iter.sorted_merge_n ~cmp:W.compare *)
+  
+  
+  (** Classic operations *)
 
-  let union = Iter.map2 @@ Segment.union W.compare
-  let inter = Iter.map2 @@ Segment.inter W.compare
-  let difference = Iter.map2 @@ Segment.difference W.compare
+  let rec union s1 s2 () = let open Iter in match s1(), s2() with
+    (* | Ret Everything, _ | _, Ret Everything -> Ret Everything *)
+    | Ret Nothing, x | x, Ret Nothing -> x
+    | Cons (x1, next1), Cons (x2, next2) ->
+      Cons (Segment.union x1 x2, union next1 next2)
+        
+  let rec inter s1 s2 () = let open Iter in match s1(), s2() with
+    (* | Ret Everything, x | x, Ret Everything -> x *)
+    | Ret Nothing, _ | _, Ret Nothing -> Ret Nothing
+    | Cons (x1, next1), Cons (x2, next2) ->
+      Cons (Segment.inter x1 x2, inter next1 next2)
+
+  let rec difference s1 s2 () = let open Iter in match s1(), s2() with
+    | Ret Nothing, _ -> Ret Nothing
+    (* | _, Ret Everything -> Ret Nothing *)
+    | x, Ret Nothing -> x
+    (* | Ret Everything, Cons (x, next) -> (??) *)
+    | Cons (x1, next1), Cons (x2, next2) ->
+      Cons (Segment.difference x1 x2, difference next1 next2)
   
   (** Concatenation *)
-  
-  (* let segmentize_infite =
-   *   let rec aux i x () =
-   *     let p w = W.length w = i in
-   *     let segment_i = Iter.take_while p x in
-   *     let nexts = Iter.drop_while p x in
-   *     (segment_i @: aux (i+1) nexts) ()
-   *   in
-   *   aux 0
-   *     
-   * let segmentize =
-   *   let rec aux i x () = match x () with
-   *     | Iter.Nil -> Iter.empty ()
-   *     | _ ->
-   *       let p w = W.length w = i in
-   *       let segment_i = Iter.take_while p x in
-   *       let nexts = Iter.drop_while p x in
-   *       (segment_i @: aux (i+1) nexts) ()
-   *   in
-   *   aux 0 *)
-  
+    
   let concatenate =
     let subterms_of_length map1 map2 n =
       let combine_segments i =
         Segment.cross_product
           W.append
-          (IntMap.find (n - i) map1)
-          (IntMap.find i map2)
+          (M.find i map1)
+          (M.find (n - i) map2)
       in
-      Segment.range 0 n
-      |> Segment.map combine_segments
-      |> Segment.merge W.compare
+      OSeq.(0 -- n)
+      |> OSeq.map combine_segments
+      |> Segment.merge
     in
     let rec do_merge n map1 map2 segm1 segm2 seq1 seq2 =
-      let map1 = IntMap.add n segm1 map1 in 
-      let map2 = IntMap.add n segm2 map2 in
+      let map1 = M.save n segm1 map1 in 
+      let map2 = M.save n segm2 map2 in
       subterms_of_length map1 map2 n @: collect (n+1) map1 map2 seq1 seq2
     and collect n map1 map2 seq1 seq2 () = match seq1 (), seq2 () with
-      | Iter.Nil Nothing, x | x, Iter.Nil Nothing-> x
-      | Iter.Nil _, Iter.Nil _ -> Iter.Nil Everything
-      | Nil Everything, Cons (segm2, s2) -> (??)
-      | Cons (segm1, s1), Nil Everything -> (??)
+      | Iter.Ret Nothing, _x | _x, Iter.Ret Nothing -> assert false
+      (* | Ret _, Ret _ -> Iter.Ret Everything
+       * | Ret Everything, Cons (segm2, s2) -> (??)
+       * | Cons (segm1, s1), Ret Everything -> (??) *)
       | Cons (segm1, seq1), Cons (segm2, seq2) ->
-        do_merge  n map1 map2 segm1 segm2 seq1 seq2 ()
+        do_merge n map1 map2 segm1 segm2 seq1 seq2 ()
     in 
-    collect 0 IntMap.empty IntMap.empty
+    collect 0 M.empty M.empty
     
   (** Star *)
-  let is_infinite = Iter.exists (Segment.exists (fun w -> W.length w > 0))
   
-  (* let rec iter_partitions n =
-   *   if n = 0 then Segment.return Iter.empty
-   *   else
-   *     let open Segment.Infix in
-   *     1 -- n >>= fun i ->
-   *     iter_partitions (n - i) >|= fun s ->
-   *     i @: s *)
-        
+  (** xs \in pn => sum xs = n, xi \in xs => xi \in ns /\ xi > 0
+      no repetitions
+      ns is sorted decreasingly
+  *)
+  let rec valid_partitions ns n =
+    if n = 0 then OSeq.return []
+    else
+      let ns = OSeq.drop_while (fun x -> x > n) ns in
+      let open OSeq.Infix in
+      ns >>= fun i ->
+      valid_partitions ns (n - i) >|= fun s ->
+      i :: s
+      
   let star (seq : lang) =
-    let infinite = is_infinite seq in
-    let rec words_of_partition p =
-      let aux s i = 
-        Segment.cross_product W.append s (Iter.nth seq i)
+    let words_of_partition map p =
+      let aux ws i =
+        Segment.cross_product W.append ws (M.find i map)
       in
-      Segment.fold aux (Segment.return W.empty) p
+      List.fold_left aux (Segment.return W.empty) p
     in
-    let subterm_of_length n =
-      Segment.partitions n
-      |> Segment.map words_of_partition
-      |> Segment.merge W.compare
+    let subterm_of_length indices map n =
+      valid_partitions indices n
+      |> OSeq.map (words_of_partition map)
+      |> Segment.merge
     in
-    let rec collect n () =
-      (subterm_of_length n @: collect (n + 1)) ()
+    let rec collect n indices map s () =
+      (let indices, map, s = match s() with
+        | Iter.Ret _ -> assert false
+        | Cons (segm, s) ->
+          (if Segment.is_empty segm then indices else n :: indices),
+          (M.save n segm map), s
+       in
+       let new_segm_n = subterm_of_length (OSeq.of_list indices) map n in
+       new_segm_n @: collect (n + 1) indices map s) ()
     in
-    if infinite
-    then segment0 @: collect 1
-    else Iter.return segment0
-  
+    segment0 @: collect 1 [] M.empty (Iter.tail seq)
+
+
   let sigma_star sigma =
     let cons_all term_k' =
-      Segment.cross_product W.cons sigma term_k'
+      sigma
+      |> OSeq.map (fun c -> Segment.map (fun x -> W.cons c x) term_k')
+      |> Segment.merge
     in
     let rec collect acc =
       acc @: fun () -> collect (cons_all acc) ()
@@ -186,47 +163,45 @@ module Make (C : CHAR) (W : WORD with type char := C.t) (Segment : SEGMENT) = st
     collect segment0
 
   (****)
+
+  let rec flatten s = match s () with
+    | Iter.Ret Nothing -> Sequence.empty
+    | Cons (x, s) -> (Sequence.append (Segment.to_seq x) @@ fun k -> flatten s k)
   
-  let rec gen sigma r : lang = match r with
-    | Zero -> Iter.empty 
-    | One -> Iter.return segment0
-    | Atom x -> Iter.return @@ Segment.return @@ W.singleton x
-    | Seq (r1, r2) -> concatenate (gen sigma r1) (gen sigma r2)
-    | Or (r1, r2) -> union (gen sigma r1) (gen sigma r2)
-    | And (r1, r2) -> inter (gen sigma r1) (gen sigma r2)
-    | Not r -> difference (sigma_star sigma) (gen sigma r)
-    | Star r -> star (gen sigma r)
+  let gen sigma =
+    let sigma_star = Iter.memoize @@ sigma_star sigma in
+    let rec g r : lang = match r with
+      | Zero -> nothing
+      | One -> segment0 @: nothing
+      | Atom x -> Segment.empty @: (Segment.return @@ W.singleton x) @: nothing
+      | Seq (r1, r2) -> concatenate (g r1) (g r2)
+      | Or (r1, r2) -> union (g r1) (g r2)
+      | And (r1, r2) -> inter (g r1) (g r2)
+      | Not r -> difference sigma_star (g r)
+      | Star r -> star (g r)
+    in
+    g
 
-end
+  (** Utils *)
+  
+  let pp ?(pp_sep=Format.pp_print_cut) pp_item fmt (l : lang) =
+    let rec pp fmt l = match l() with
+      | Iter.Ret Nothing -> ()
+      | Cons (x,l') ->
+        pp_sep fmt ();
+        pp_item fmt x;
+        pp fmt l'
+    in
+    match l() with
+    | Iter.Ret Nothing -> ()
+    | Cons (x,l') -> pp_item fmt x; pp fmt l'
+  
+  let of_list l =
+    let rec aux n l () = match l with
+      | [] -> nothing ()
+      | _ ->
+        let x, rest = CCList.partition (fun s -> W.length s = n) l in
+        Cons (Segment.of_list x, aux (n+1) rest)
+    in aux 0 l
 
-
-module WList (C : CHAR) = struct
-  type t = C.t list
-  let empty = []
-  let singleton x = [x]
-  let length = List.length
-  let append = List.append
-  let cons = List.cons
-
-  (* Length lexicographic order *)
-  let compare l1 l2 =
-    if l1 == l2 then 0
-    else CCOrd.(
-        int (length l1) (length l2)
-        <?> (list C.compare, l1, l2))
-  let pp = CCFormat.(list ~sep:(fun _ () -> ()) char)
-end
-
-module WString = struct
-  include CCString
-  let empty = ""
-  let singleton = make 1
-  let cons c s = singleton c ^ s
-  let append = (^)
-  let compare l1 l2 = 
-    if l1 == l2 then 0
-    else CCOrd.(
-        int (length l1) (length l2)
-        <?> (string, l1, l2))
-  let pp = CCFormat.string
 end
