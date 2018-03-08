@@ -32,7 +32,11 @@ module type SEGMENT = sig
   val memoize : t -> t
 end
 
-module Make (C : CHAR) (W : WORD with type char := C.t) (Segment : SEGMENT with type elt = W.t) = struct
+module[@inline always] Make
+    (C : CHAR)
+    (W : WORD with type char := C.t)
+    (Segment : SEGMENT with type elt = W.t)
+= struct
 
   module M = struct
     include CCMap.Make(CCInt)

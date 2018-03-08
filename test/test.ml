@@ -3,7 +3,7 @@ open Re_testing
 (* module W = Word.List(Char) *)
 module C = Char
 module W = Word.String
-module S = Segments.LazyList(W)
+module S = Segments.ThunkList(W)
 module L = Make (Char) (W) (S)
 
 (* let print : L.lang -> unit =
@@ -39,7 +39,7 @@ let () =
   let sigma = OSeq.of_list ['a'; 'b' ; 'c'] in
   L.gen sigma re
   |> L.flatten
-  |> Sequence.take 30000
+  |> Sequence.take 50000
   (* |> (fun x -> assert_sorted x ; x) *)
   |> Fmt.pr "%a@." CCFormat.(map Sequence.length int)
   (* |> print *)
