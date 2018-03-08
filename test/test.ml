@@ -6,10 +6,9 @@ module W = Word.String
 module S = Segments.ThunkList(W)
 module L = Make (Char) (W) (S)
 
-(* let print : L.lang -> unit =
- *   L.pp ~pp_sep:(Fmt.unit "@.")
- *     (Fmt.hbox @@ S.pp ~sep:", " W.pp) Fmt.stdout *)
-
+let print : L.lang -> unit =
+  L.pp ~pp_sep:(Fmt.unit "@.")
+    (Fmt.hbox @@ S.pp ~sep:", " W.pp) Fmt.stdout
 
 let assert_sorted s =
   let rec aux x = function
@@ -30,16 +29,57 @@ let assert_sorted s =
  * let l = !!["a"; "ab"; "c" ;"abc"]
  * let a = !!["a"] *)
 
+let sigma = OSeq.of_list ['a'; 'b' ; 'c']
 
-let () =
-  (* let re = L.(Seq (Not (Atom 'a'), Atom 'a')) in *)
-  (* let re = L.(Star (Atom 'a')) in *)
-  (* let re = L.(Star (Seq (Atom 'a', Star (Atom 'b')))) in *)
-  let re = L.(Star (Seq (Or (Atom 'a', One), Star (Atom 'b')))) in
-  let sigma = OSeq.of_list ['a'; 'b' ; 'c'] in
-  L.gen sigma re
-  |> L.flatten
-  |> Sequence.take 50000
-  (* |> (fun x -> assert_sorted x ; x) *)
-  |> Fmt.pr "%a@." CCFormat.(map Sequence.length int)
-  (* |> print *)
+let langs = [|
+  L.(Seq (Not (Atom 'a'), Atom 'a')) ;
+  L.(Star (Atom 'a')) ;
+  L.(Star (Seq (Atom 'a', Star (Atom 'b')))) ;
+  L.(Star (Seq (Or (Atom 'a', One), Star (Atom 'b')))) ;
+|]
+
+let id x = x
+
+let print_all ?n (lang : L.lang) =
+  lang
+  (* |> L.flatten *)
+  |> (match n with Some n -> Iter.take n L.Nothing | None -> id)
+  |> print
+
+let time_up_to_gen n lang =
+  let i = lang
+          |> Iter.take n L.Nothing
+          |> L.flatten
+          |> Sequence.length
+  in
+  Fmt.pr "Max length: %i@.Count: %i@.Time: %a@." n i
+    Mtime.Span.pp (Mtime_clock.elapsed())
+
+let time_up_to_length n lang =
+  let i = lang
+          |> L.flatten
+          |> Sequence.take n
+          |> Sequence.length
+  in
+  Fmt.pr "Max count: %i@.Actual Count: %i@.Time: %a@." n i
+    Mtime.Span.pp (Mtime_clock.elapsed())
+
+let measure_until ~limit ~interval file lang =
+  let c = Mtime_clock.counter () in
+  let r = ref 0 in
+  let oc = open_out file in
+  let fmt = Format.formatter_of_out_channel oc in
+  let output i s = Fmt.pf fmt "%i\t%f@." i (Mtime.Span.to_s s) in
+  let f _ =
+    incr r ;
+    let i = !r in
+    if i mod interval = 0 then begin
+      let t = Mtime_clock.count c in
+      output i t ;
+      if Mtime.Span.compare limit t < 0 then raise Exit
+    end
+  in
+  (try Sequence.iter f (L.flatten lang) with Exit -> ());
+  close_out oc ;
+  !r
+                                                    

@@ -1,8 +1,15 @@
 (jbuild_version 1)
 
-(executable
+(library
  ((name test)
   (modules (test))
-  (libraries (re_testing))
+  (libraries (mtime.clock.os re_testing))
+  (ocamlopt_flags (:standard "-O3" "-inlining-report"))
+))
+
+(executable
+ ((name running_profile)
+  (modules (running_profile))
+  (libraries (test))
   (ocamlopt_flags (:standard "-O3" "-inlining-report"))
 ))

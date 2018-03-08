@@ -9,7 +9,6 @@ module type WORD = sig
   val length : t -> int
   val append : t -> t -> t
   val cons : char -> t -> t
-  val compare : t -> t -> int
 end
 
 module type SEGMENT = sig
