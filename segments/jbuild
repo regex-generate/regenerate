@@ -3,4 +3,5 @@
 (library
  ((name segments)
   (libraries (fmt containers.iter oseq containers))
+  (ocamlopt_flags (:standard "-O3"))
 ))

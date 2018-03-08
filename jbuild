@@ -4,4 +4,5 @@
  ((name re_testing)
   (wrapped false)
   (libraries (segments fmt sequence oseq containers))
+  (ocamlopt_flags (:standard "-O3" "-inlining-report"))
 ))
