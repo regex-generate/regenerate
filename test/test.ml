@@ -3,7 +3,7 @@ open Re_testing
 (* module W = Word.List(Char) *)
 module C = Char
 module W = Word.String
-module S = Segments.ThunkList(W)
+module S = Segments.StrictSet(W)
 module L = Make (Char) (W) (S)
 
 let print : L.lang -> unit =
@@ -75,8 +75,9 @@ let measure_until ~limit ~interval file lang =
     let i = !r in
     if i mod interval = 0 then begin
       let t = Mtime_clock.count c in
-      output i t ;
-      if Mtime.Span.compare limit t < 0 then raise Exit
+      if Mtime.Span.compare limit t < 0
+      then raise Exit
+      else output i t
     end
   in
   (try Sequence.iter f (L.flatten lang) with Exit -> ());
