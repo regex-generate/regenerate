@@ -3,7 +3,7 @@
 (library
  ((name test)
   (modules (test))
-  (libraries (mtime.clock.os re_testing))
+  (libraries (mtime.clock.os regenerate))
   (ocamlopt_flags (:standard "-O3" "-inlining-report"))
 ))
 

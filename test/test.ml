@@ -1,4 +1,4 @@
-open Re_testing
+open Regenerate
 
 (* module W = Word.List(Char) *)
 module C = Char

@@ -30,7 +30,7 @@ module type SEGMENT = sig
 
   val memoize : t -> t
 end
-
+  
 module[@inline always] Make
     (C : CHAR)
     (W : WORD with type char := C.t)
@@ -42,16 +42,6 @@ module[@inline always] Make
     let save k s m = add k (Segment.memoize s) m
   end
     
-  type re
-    = Zero
-    | One
-    | Atom of C.t
-    | Seq of re * re
-    | Or of re * re
-    | And of re * re
-    | Not of re
-    | Star of re
-
   type word = W.t
   type rest = Nothing (* | Everything *)
   type lang = (Segment.t, rest) Iter.t
@@ -61,8 +51,6 @@ module[@inline always] Make
   (* let everything = Iter.return Everything *)
   
   let segment0 = Segment.return W.empty
-
-  
   
   (** Classic operations *)
 
@@ -173,7 +161,7 @@ module[@inline always] Make
   
   let gen sigma =
     let sigma_star = Iter.memoize @@ sigma_star sigma in
-    let rec g r : lang = match r with
+    let rec g (r : _ Regex.t) : lang = match r with
       | Zero -> nothing
       | One -> segment0 @: nothing
       | Atom x -> Segment.empty @: (Segment.return @@ W.singleton x) @: nothing

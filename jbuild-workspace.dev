@@ -1,0 +1,7 @@
+;; Install the following opam switches, copy this file as
+;; jbuild-workspace and run:
+;;
+;; $ jbuilder build @install
+
+(context ((switch 4.06.1)))
+(context ((switch 4.06.1+flambda)))

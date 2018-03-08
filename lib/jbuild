@@ -1,8 +1,7 @@
 (jbuild_version 1)
 
 (library
- ((name re_testing)
-  (wrapped false)
+ ((name regenerate)
   (libraries (segments fmt sequence oseq containers))
   (ocamlopt_flags (:standard "-O3" "-inlining-report"))
 ))
