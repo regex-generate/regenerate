@@ -3,12 +3,12 @@ open Re_testing
 (* module W = Word.List(Char) *)
 module C = Char
 module W = Word.String
-module S = Segments.ThunkList(W)
+module S = Segments.LazyList(W)
 module L = Make (Char) (W) (S)
 
-let print : L.lang -> unit =
-  L.pp ~pp_sep:(Fmt.unit "@.")
-    (Fmt.hbox @@ S.pp ~sep:", " W.pp) Fmt.stdout
+(* let print : L.lang -> unit =
+ *   L.pp ~pp_sep:(Fmt.unit "@.")
+ *     (Fmt.hbox @@ S.pp ~sep:", " W.pp) Fmt.stdout *)
 
 
 let assert_sorted s =
@@ -38,8 +38,8 @@ let () =
   let re = L.(Star (Seq (Or (Atom 'a', One), Star (Atom 'b')))) in
   let sigma = OSeq.of_list ['a'; 'b' ; 'c'] in
   L.gen sigma re
-  (* |> L.flatten *)
-  (* |> Sequence.take 1000 *)
+  |> L.flatten
+  |> Sequence.take 30000
   (* |> (fun x -> assert_sorted x ; x) *)
-  (* |> Fmt.pr "%a@." CCFormat.(map Sequence.length int) *)
-  |> print
+  |> Fmt.pr "%a@." CCFormat.(map Sequence.length int)
+  (* |> print *)
