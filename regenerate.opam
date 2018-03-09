@@ -1,0 +1,24 @@
+opam-version: "2.0"
+version: "~dev"
+synopsis: "Generate strings matching a given regular expression"
+maintainer: "Drup <drupyog@zoho.com>"
+authors: "Drup <drupyog@zoho.com>"
+license: "MIT"
+homepage: "https://github.com/Drup/re_testing"
+bug-reports: "https://github.com/Drup/re_testing/issues"
+dev-repo: "git+https://github.com/Drup/re_testing.git"
+depends: [
+  "jbuilder" {build}
+  "ocaml"
+  "cmdliner"
+  "fmt"
+  "containers"
+  "mtime"
+  "oseq"
+  "sequence"
+]
+build: [
+  ["jbuilder" "subst" "-n" name] {pinned}
+  ["jbuilder" "build" "-p" name "-j" jobs]
+  ["jbuilder" "runtest" "-p" name "-j" jobs] {with-test}
+]

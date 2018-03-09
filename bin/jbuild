@@ -2,7 +2,7 @@
 
 (executable
  ((name gen_re)
-  ; (public_name regenerate)
+  (public_name regenerate)
   (libraries (regenerate fmt.tty cmdliner))
   (ocamlopt_flags (:standard "-O3" "-inlining-report"))
 ))
