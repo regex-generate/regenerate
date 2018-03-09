@@ -22,7 +22,10 @@ let parse s =
     if eos () || test '|' || test '&' || test ')' then Regex.concat (List.rev left)
     else branch' (piece () :: left)
   and piece () =
-    let r = atom () in
+    let not_op =
+      if accept '~' then Regex.compl else fun x -> x
+    in
+    let r = not_op @@ atom () in
     if accept '*' then Regex.star r else
     if accept '+' then Regex.plus r else
     if accept '?' then Regex.opt r else
@@ -65,7 +68,7 @@ let parse s =
     if accept '\\' then begin
       if eos () then raise Parse_error;
       match get () with
-        '|' | '&' | '(' | ')' | '*' | '+' | '?'
+        '|' | '&' | '(' | ')' | '*' | '+' | '?' | '~'
       | '[' | '.' | '^' | '$' | '{' | '\\' as c -> Regex.char c
       |                 _                       -> raise Parse_error
     end else begin
