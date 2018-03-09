@@ -122,3 +122,8 @@ let parse s =
   let res = regexp () in
   if not (eos ()) then raise Parse_error;
   res
+
+let parse s =
+  try Ok (parse s) with
+  | Parse_error -> Error `Parse_error
+  | Not_supported -> Error `Not_supported
