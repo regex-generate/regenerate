@@ -6,11 +6,11 @@ module W = Word.String
 module S = Segments.StrictSet(W)
 module L = Make (Char) (W) (S)
 
-let print : L.lang -> unit =
-  L.pp ~pp_sep:(Fmt.unit "@.")
-    (Fmt.hbox @@ S.pp ~sep:", " W.pp) Fmt.stdout
-
-let alphabet = CCOpt.get_exn @@ enumerate ' ' '~'
+let alphabet =
+  S.of_list @@
+  OSeq.to_list @@
+  OSeq.map W.singleton @@
+  CCOpt.get_exn @@ enumerate ' ' '~'
 
 let re_arg =
   let err_msg = function

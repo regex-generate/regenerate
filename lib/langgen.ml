@@ -10,31 +10,11 @@ module type WORD = sig
   val append : t -> t -> t
   val cons : char -> t -> t
 end
-
-module type SEGMENT = sig
-  type elt
-  type t
-  val empty : t
-  val is_empty : t -> bool
-  val return : elt -> t
-  val map : (elt -> elt) ->  t -> t
-  val cross_product : (elt -> elt -> elt) -> t -> t -> t
-
-  val union : t -> t -> t
-  val inter : t -> t -> t
-  val difference : t -> t -> t
-  val merge : t OSeq.t -> t
-
-  val of_list : elt list -> t
-  val to_seq : t -> elt Sequence.t
-
-  val memoize : t -> t
-end
   
 module[@inline always] Make
     (C : CHAR)
     (W : WORD with type char := C.t)
-    (Segment : SEGMENT with type elt = W.t)
+    (Segment : Segments.S with type elt = W.t)
 = struct
 
   module M = struct
@@ -72,15 +52,14 @@ module[@inline always] Make
     | x, Ret Nothing -> x
     (* | Ret Everything, Cons (x, next) -> (??) *)
     | Cons (x1, next1), Cons (x2, next2) ->
-      Cons (Segment.difference x1 x2, difference next1 next2)
+      Cons (Segment.diff x1 x2, difference next1 next2)
   
   (** Concatenation *)
     
   let concatenate =
     let subterms_of_length map1 map2 n =
       let combine_segments i =
-        Segment.cross_product
-          W.append
+        Segment.append
           (M.find i map1)
           (M.find (n - i) map2)
       in
@@ -120,7 +99,7 @@ module[@inline always] Make
   let star (seq : lang) =
     let words_of_partition map p =
       let aux ws i =
-        Segment.cross_product W.append ws (M.find i map)
+        Segment.append ws (M.find i map)
       in
       List.fold_left aux (Segment.return W.empty) p
     in
@@ -143,13 +122,11 @@ module[@inline always] Make
 
 
   let sigma_star sigma =
-    let cons_all term_k' =
-      sigma
-      |> OSeq.map (fun c -> Segment.map (fun x -> W.cons c x) term_k')
-      |> Segment.merge
+    let f term_k' =
+      Segment.append term_k' sigma
     in
     let rec collect acc =
-      acc @: fun () -> collect (cons_all acc) ()
+      acc @: fun () -> collect (f acc) ()
     in
     collect segment0
 
@@ -174,18 +151,20 @@ module[@inline always] Make
     g
 
   (** Utils *)
-  
-  let pp ?(pp_sep=Format.pp_print_cut) pp_item fmt (l : lang) =
+
+  let pp_item pp_word =
+    Fmt.hbox @@ Fmt.iter ~sep:(Fmt.unit ", ") (CCFun.flip Segment.to_seq) pp_word
+  let pp ?(pp_sep=Format.pp_print_cut) pp_word fmt (l : lang) =
     let rec pp fmt l = match l() with
       | Iter.Ret Nothing -> ()
       | Cons (x,l') ->
         pp_sep fmt ();
-        pp_item fmt x;
+        pp_item pp_word fmt x;
         pp fmt l'
     in
     match l() with
     | Iter.Ret Nothing -> ()
-    | Cons (x,l') -> pp_item fmt x; pp fmt l'
+    | Cons (x,l') -> pp_item pp_word fmt x; pp fmt l'
   
   let of_list l =
     let rec aux n l () = match l with
@@ -195,4 +174,7 @@ module[@inline always] Make
         Cons (Segment.of_list x, aux (n+1) rest)
     in aux 0 l
 
+  let print pp_word : lang -> unit =
+    pp ~pp_sep:(Fmt.unit "@.") pp_word Fmt.stdout
+  
 end

@@ -6,10 +6,6 @@ module W = Word.String
 module S = Segments.StrictSet(W)
 module L = Make (Char) (W) (S)
 
-let print : L.lang -> unit =
-  L.pp ~pp_sep:(Fmt.unit "@.")
-    (Fmt.hbox @@ S.pp ~sep:", " W.pp) Fmt.stdout
-
 let assert_sorted s =
   let rec aux x = function
     | OSeq.Nil -> ()
@@ -29,13 +25,13 @@ let assert_sorted s =
  * let l = !!["a"; "ab"; "c" ;"abc"]
  * let a = !!["a"] *)
 
-let sigma = OSeq.of_list ['a'; 'b' ; 'c']
+let sigma = S.of_list ["a"; "b" ; "c"]
 
 let langs = [|
-  L.(Seq (Not (Atom 'a'), Atom 'a')) ;
-  L.(Star (Atom 'a')) ;
-  L.(Star (Seq (Atom 'a', Star (Atom 'b')))) ;
-  L.(Star (Seq (Or (Atom 'a', One), Star (Atom 'b')))) ;
+  Seq (Not (Atom 'a'), Atom 'a') ;
+  Star (Atom 'a') ;
+  Star (Seq (Atom 'a', Star (Atom 'b'))) ;
+  Star (Seq (Or (Atom 'a', One), Star (Atom 'b'))) ;
 |]
 
 let id x = x
@@ -44,7 +40,7 @@ let print_all ?n (lang : L.lang) =
   lang
   (* |> L.flatten *)
   |> (match n with Some n -> Iter.take n L.Nothing | None -> id)
-  |> print
+  |> L.print W.pp
 
 let time_up_to_gen n lang =
   let i = lang
