@@ -1,7 +1,7 @@
 open Test
 
 let f i l =
-  let file = Fmt.strf "re_set_%i.csv" i in
+  let file = Fmt.strf "re_trie_%i.csv" i in
   let n = 
     L.gen sigma l
     |> Test.measure_until

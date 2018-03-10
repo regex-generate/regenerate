@@ -3,7 +3,7 @@ open Cmdliner
 
 module C = Char
 module W = Word.String
-module S = Segments.StrictSet(W)
+module S = Segments.Trie.String
 module L = Make (Char) (W) (S)
 
 let alphabet =

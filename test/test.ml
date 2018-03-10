@@ -3,7 +3,7 @@ open Regenerate
 (* module W = Word.List(Char) *)
 module C = Char
 module W = Word.String
-module S = Segments.StrictSet(W)
+module S = Segments.Trie.String
 module L = Make (Char) (W) (S)
 
 let assert_sorted s =
