@@ -108,9 +108,10 @@ let measure_until ~limit ~interval oc lang =
     let i = !r in
     if i mod interval = 0 then begin
       let t = Mtime_clock.count c in
+      output i t ;
       if Mtime.Span.compare limit t < 0
       then raise Exit
-      else output i t
+      else ()
     end
   in
   (try Sequence.iter f lang with Exit -> ());
