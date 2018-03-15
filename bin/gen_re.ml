@@ -6,11 +6,13 @@ module S = Segments.Trie.String
 
 type segment_imple =
   | ThunkList
+  | ThunkListMemo
   | LazyList
   | StrictSet
   | Trie
 
 module LThunkList = Make (Word.String) (Segments.ThunkList (Word.String))
+module LThunkListMemo = Make (Word.String) (Segments.ThunkListMemo (Word.String))
 module LLazyList = Make (Word.String) (Segments.LazyList (Word.String))
 module LStrictSet = Make (Word.String) (Segments.StrictSet (Word.String))
 module LTrie = Make (Word.String) (Segments.Trie.Make (Word.String))
@@ -21,6 +23,7 @@ let comp f g h sigma re =
 
 let get_impl  = function
   | ThunkList -> comp LThunkList.gen LThunkList.flatten LThunkList.Segment.of_list
+  | ThunkListMemo -> comp LThunkListMemo.gen LThunkListMemo.flatten LThunkListMemo.Segment.of_list
   | LazyList -> comp LLazyList.gen LLazyList.flatten LLazyList.Segment.of_list
   | StrictSet -> comp LStrictSet.gen LStrictSet.flatten LStrictSet.Segment.of_list
   | Trie -> comp LTrie.gen LTrie.flatten LTrie.Segment.of_list
@@ -31,6 +34,7 @@ let backend =
   in
   let c = Arg.enum [
       "ThunkList", ThunkList ;
+      "ThunkListMemo", ThunkListMemo ;
       "LazyList", LazyList ;
       "StrictSet", StrictSet ;
       "Trie", Trie ;

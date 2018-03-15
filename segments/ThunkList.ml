@@ -9,8 +9,8 @@ module Make (K : Sigs.OrderedMonoid) = struct
   let of_list = of_list
   let return = return
   let to_seq x f = iter f x
-  let memoize = memoize
   let pp = pp
+  let memoize x = x
 
   type drop = Drop | Keep
   let dropX s s' = function Drop -> s' | Keep -> s
