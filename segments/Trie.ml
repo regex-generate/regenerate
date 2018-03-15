@@ -15,7 +15,7 @@ module type WORD = sig
   type t
   type char
 
-  val compare : char -> char -> int
+  val compare_char : char -> char -> int
   val append : t -> t -> t
   val to_seq : t -> char sequence
   val of_list : char list -> t
@@ -24,17 +24,17 @@ end
 module Make(W : WORD)
   (* : Sigs.S with type elt = W.t *)
 = struct
-  type char_ = W.char
+  type char = W.char
   type elt = W.t
   
   module M = Map.Make(struct
-      type t = char_
-      let compare = W.compare
+      type t = char
+      let compare = W.compare_char
     end)
 
   type +'a tree =
     | Empty
-    | Cons of char_ * 'a tree  (* simple case *)
+    | Cons of char * 'a tree  (* simple case *)
     | Node of 'a option * 'a tree M.t
 
   type t = elt tree
@@ -105,7 +105,7 @@ module Make(W : WORD)
       match t with
         | Empty -> empty, fun t -> rebuild (_cons c t)
         | Cons (c', t') ->
-          if W.compare c c' = 0
+          if W.compare_char c c' = 0
           then t', (fun t -> rebuild (_cons c t))
           else
             let rebuild' new_child =
@@ -221,7 +221,7 @@ module Make(W : WORD)
     | Empty, _ -> right t2
     | _, Empty -> left t1
     | Cons (c1,t1'), Cons (c2,t2') ->
-      if W.compare c1 c2 = 0
+      if W.compare_char c1 c2 = 0
       then _cons c1 (merge_with ~f ~left ~right t1' t2')
       else _node2 c1 (left t1') c2 (right t2')
 
@@ -357,7 +357,7 @@ module MakeArray(X : ORDERED) = Make(struct
     type t = X.t array
     type char = X.t
     let append = Array.append
-    let compare = X.compare
+    let compare_char = X.compare
     let to_seq a k = Array.iter k a
     let of_list = Array.of_list
   end)
@@ -366,7 +366,7 @@ module MakeList(X : ORDERED) = Make(struct
     type t = X.t list
     type char = X.t
     let append = List.append
-    let compare = X.compare
+    let compare_char = X.compare
     let to_seq a k = List.iter k a
     let of_list l = l
   end)
@@ -375,7 +375,7 @@ module String = Make(struct
     type t = string
     type nonrec char = char
     let append = (^)
-    let compare = Char.compare
+    let compare_char = Char.compare
     let to_seq s k = String.iter k s
     let of_list l =
       let buf = Buffer.create (List.length l) in

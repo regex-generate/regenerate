@@ -60,10 +60,9 @@ let time_up_to_length n lang =
   Fmt.pr "Max count: %i@.Actual Count: %i@.Time: %a@." n i
     Mtime.Span.pp (Mtime_clock.elapsed())
 
-let measure_until ~limit ~interval file lang =
+let measure_until ~limit ~interval oc lang =
   let c = Mtime_clock.counter () in
   let r = ref 0 in
-  let oc = open_out file in
   let fmt = Format.formatter_of_out_channel oc in
   let output i s = Fmt.pf fmt "%i\t%f@." i (Mtime.Span.to_s s) in
   let f _ =

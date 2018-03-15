@@ -1,6 +1,5 @@
 open Iter.Infix
 
-module type CHAR = Set.OrderedType
 module type WORD = sig
   type char
   type t
@@ -12,11 +11,11 @@ module type WORD = sig
 end
   
 module[@inline always] Make
-    (C : CHAR)
-    (W : WORD with type char := C.t)
+    (W : WORD)
     (Segment : Segments.S with type elt = W.t)
 = struct
 
+  module Segment = Segment
   module M = struct
     include CCMap.Make(CCInt)
     let save k s m = add k (Segment.memoize s) m
@@ -70,14 +69,14 @@ module[@inline always] Make
     let rec do_merge n map1 map2 segm1 segm2 seq1 seq2 =
       let map1 = M.save n segm1 map1 in 
       let map2 = M.save n segm2 map2 in
-      subterms_of_length map1 map2 n @: collect (n+1) map1 map2 seq1 seq2
+      Iter.Cons (subterms_of_length map1 map2 n, collect (n+1) map1 map2 seq1 seq2)
     and collect n map1 map2 seq1 seq2 () = match seq1 (), seq2 () with
       | Iter.Ret Nothing, _x | _x, Iter.Ret Nothing -> assert false
       (* | Ret _, Ret _ -> Iter.Ret Everything
        * | Ret Everything, Cons (segm2, s2) -> (??)
        * | Cons (segm1, s1), Ret Everything -> (??) *)
       | Cons (segm1, seq1), Cons (segm2, seq2) ->
-        do_merge n map1 map2 segm1 segm2 seq1 seq2 ()
+        do_merge n map1 map2 segm1 segm2 seq1 seq2
     in 
     collect 0 M.empty M.empty
     
@@ -136,7 +135,7 @@ module[@inline always] Make
     | Iter.Ret Nothing -> Sequence.empty
     | Cons (x, s) -> (Sequence.append (Segment.to_seq x) @@ fun k -> flatten s k)
   
-  let gen sigma =
+  let gen ~sigma =
     let sigma_star = Iter.memoize @@ sigma_star sigma in
     let rec g (r : _ Regex.t) : lang = match r with
       | Zero -> nothing

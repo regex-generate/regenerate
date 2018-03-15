@@ -5,7 +5,7 @@ module type WORD = sig
   type t
   type char
 
-  val compare : char -> char -> int
+  val compare_char : char -> char -> int
   val append : t -> t -> t
   val to_seq : t -> char sequence
   val of_list : char list -> t
