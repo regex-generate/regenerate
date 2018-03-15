@@ -85,32 +85,33 @@ module[@inline always] Make
   (** Star *)
    
   let star =
-    let subterms_of_length ~stop map1 map2 validIndices =
-      let combine_segments i =
-        if M.mem i map1 && M.mem (stop - i) map2 
-        then Segment.append (M.find i map1) (M.find (stop - i) map2)
-        else Segment.empty
+    let subterms_of_length ~stop validIndices mapS =
+      let combine_segments (i, segm) =
+        match M.get (stop - i) mapS with
+        | None -> Segment.empty
+        | Some s -> Segment.append segm s
       in
       validIndices
       |> List.rev_map combine_segments
       |> Segment.merge
     in
-    let rec collect n map mapS seq validIndices () = match seq () with
+    let rec collect n mapS seq validIndices () = match seq () with
       | Iter.Ret Nothing -> assert false
       | Cons (segm, seq) ->
         let validIndices =
-          if Segment.is_empty segm then validIndices else n :: validIndices
+          if Segment.is_empty segm
+          then validIndices
+          else (n, segm) :: validIndices
         in
-        let map = M.save n segm map in 
-        let segmS = subterms_of_length ~stop:n map mapS validIndices in
+        let segmS = subterms_of_length ~stop:n validIndices mapS in
         let mapS = M.save n segmS mapS in
-        Iter.Cons (segmS, collect (n+1) map mapS seq validIndices)
+        Iter.Cons (segmS, collect (n+1) mapS seq validIndices)
     in
     fun s () -> match s() with
     | Iter.Ret Nothing -> assert false
     | Cons (_, seq) ->
       let mS = M.singleton 0 segmentEpsilon in
-      Iter.Cons (segmentEpsilon, collect 1 M.empty mS seq [])
+      Iter.Cons (segmentEpsilon, collect 1 mS seq [])
 
   
   let sigma_star sigma =
