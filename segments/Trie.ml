@@ -299,7 +299,7 @@ module Make(W : WORD)
     merge_with ~f ~left ~right l l'
 
   let merge l =
-    OSeq.fold union Empty l
+    List.fold_left union Empty l
 
   (** Grafting/flatmap *)
 

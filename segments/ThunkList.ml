@@ -68,7 +68,7 @@ module Make (K : Sigs.OrderedMonoid) = struct
     let push h s =
       match s() with Nil -> h | Cons (x, s') -> Heap.insert h (x, [s'])
     in
-    let h0 = fold push (Heap.empty ~cmp ~merge) l in
+    let h0 = List.fold_left push (Heap.empty ~cmp ~merge) l in
     let rec next heap () =
       if Heap.is_empty heap then Nil else begin
         let (x, seq), heaps = Heap.pop heap in

@@ -77,7 +77,7 @@ module Make (K : Sigs.OrderedMonoid) = struct
     let push h s =
       match Lazy.force s with L.Nil -> h | Cons (x, s') -> Heap.insert h (x, [s'])
     in
-    let h0 = OSeq.fold push (Heap.empty ~cmp ~merge) l in
+    let h0 = List.fold_left push (Heap.empty ~cmp ~merge) l in
     let rec next heap =
       lazy (
         if Heap.is_empty heap then L.Nil else begin

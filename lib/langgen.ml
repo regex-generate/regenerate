@@ -18,7 +18,9 @@ module[@inline always] Make
   module Segment = Segment
   module M = struct
     include CCMap.Make(CCInt)
-    let save k s m = add k (Segment.memoize s) m
+    let save k s m =
+      if Segment.is_empty s then m
+      else add k (Segment.memoize s) m
   end
     
   type word = W.t
@@ -29,7 +31,7 @@ module[@inline always] Make
   let rec nothing () = Iter.Cons (Segment.empty, nothing)
   (* let everything = Iter.return Everything *)
   
-  let segment0 = Segment.return W.empty
+  let segmentEpsilon = Segment.return W.empty
   
   (** Classic operations *)
 
@@ -58,12 +60,12 @@ module[@inline always] Make
   let concatenate =
     let subterms_of_length map1 map2 n =
       let combine_segments i =
-        Segment.append
-          (M.find i map1)
-          (M.find (n - i) map2)
+        if M.mem i map1 && M.mem (n - i) map2 
+        then Segment.append (M.find i map1) (M.find (n - i) map2)
+        else Segment.empty
       in
-      OSeq.(0 -- n)
-      |> OSeq.map combine_segments
+      CCList.(0 -- n)
+      |> List.rev_map combine_segments
       |> Segment.merge
     in
     let rec do_merge n map1 map2 segm1 segm2 seq1 seq2 =
@@ -81,53 +83,44 @@ module[@inline always] Make
     collect 0 M.empty M.empty
     
   (** Star *)
-  
-  (** xs \in pn => sum xs = n, xi \in xs => xi \in ns /\ xi > 0
-      no repetitions
-      ns is sorted decreasingly
-  *)
-  let rec valid_partitions ns n =
-    if n = 0 then OSeq.return []
-    else
-      let ns = OSeq.drop_while (fun x -> x > n) ns in
-      let open OSeq.Infix in
-      ns >>= fun i ->
-      valid_partitions ns (n - i) >|= fun s ->
-      i :: s
-      
-  let star (seq : lang) =
-    let words_of_partition map p =
-      let aux ws i =
-        Segment.append ws (M.find i map)
+   
+  let star =
+    let subterms_of_length ~stop map1 map2 validIndices =
+      let combine_segments i =
+        if M.mem i map1 && M.mem (stop - i) map2 
+        then Segment.append (M.find i map1) (M.find (stop - i) map2)
+        else Segment.empty
       in
-      List.fold_left aux (Segment.return W.empty) p
-    in
-    let subterm_of_length indices map n =
-      valid_partitions indices n
-      |> OSeq.map (words_of_partition map)
+      validIndices
+      |> List.rev_map combine_segments
       |> Segment.merge
     in
-    let rec collect n indices map s () =
-      (let indices, map, s = match s() with
-        | Iter.Ret _ -> assert false
-        | Cons (segm, s) ->
-          (if Segment.is_empty segm then indices else n :: indices),
-          (M.save n segm map), s
-       in
-       let new_segm_n = subterm_of_length (OSeq.of_list indices) map n in
-       new_segm_n @: collect (n + 1) indices map s) ()
+    let rec collect n map mapS seq validIndices () = match seq () with
+      | Iter.Ret Nothing -> assert false
+      | Cons (segm, seq) ->
+        let validIndices =
+          if Segment.is_empty segm then validIndices else n :: validIndices
+        in
+        let map = M.save n segm map in 
+        let segmS = subterms_of_length ~stop:n map mapS validIndices in
+        let mapS = M.save n segmS mapS in
+        Iter.Cons (segmS, collect (n+1) map mapS seq validIndices)
     in
-    segment0 @: collect 1 [] M.empty (Iter.tail seq)
+    fun s () -> match s() with
+    | Iter.Ret Nothing -> assert false
+    | Cons (_, seq) ->
+      let mS = M.singleton 0 segmentEpsilon in
+      Iter.Cons (segmentEpsilon, collect 1 M.empty mS seq [])
 
-
+  
   let sigma_star sigma =
     let f term_k' =
       Segment.append term_k' sigma
     in
-    let rec collect acc =
-      acc @: fun () -> collect (f acc) ()
+    let rec collect acc () =
+      Iter.Cons (acc, collect (f acc))
     in
-    collect segment0
+    collect segmentEpsilon
 
   (****)
 
@@ -139,7 +132,7 @@ module[@inline always] Make
     let sigma_star = Iter.memoize @@ sigma_star sigma in
     let rec g (r : _ Regex.t) : lang = match r with
       | Zero -> nothing
-      | One -> segment0 @: nothing
+      | One -> segmentEpsilon @: nothing
       | Atom x -> Segment.empty @: (Segment.return @@ W.singleton x) @: nothing
       | Seq (r1, r2) -> concatenate (g r1) (g r2)
       | Or (r1, r2) -> union (g r1) (g r2)

@@ -14,7 +14,7 @@ module type S = sig
   val union : t -> t -> t
   val inter : t -> t -> t
   val diff : t -> t -> t
-  val merge : t OSeq.t -> t
+  val merge : t list -> t
 
   val of_list : elt list -> t
   val to_seq : t -> elt Sequence.t

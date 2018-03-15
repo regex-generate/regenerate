@@ -1,7 +1,7 @@
 module Make (K : Sigs.OrderedMonoid) = struct
   include CCSet.Make(K)
 
-  let merge = OSeq.fold union empty
+  let merge = List.fold_left union empty
   let memoize x = x
   let return = singleton
   let append s1 s2 =
