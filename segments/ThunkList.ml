@@ -7,9 +7,6 @@ module Make (K : Sigs.OrderedMonoid) = struct
   let empty = empty
   let is_empty = is_empty
   let of_list = of_list
-  let exists = exists
-  let fold = fold
-  let map = map
   let return = return
   let to_seq x f = iter f x
   let memoize = memoize
@@ -59,8 +56,6 @@ module Make (K : Sigs.OrderedMonoid) = struct
 
   let append l1 l2 =
     l1 >>= fun x -> l2 >|= fun y -> K.append x y
-
-  let range i j = (i -- j)
 
   let merge l =
     let cmp (v1,_) (v2,_) = K.compare v1 v2 in

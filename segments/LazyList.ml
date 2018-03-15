@@ -11,7 +11,6 @@ module Make (K : Sigs.OrderedMonoid) = struct
   let empty = L.empty
   let is_empty = L.is_empty
   let return = L.return
-  let map f = L.map ~f
 
   let of_list = L.of_list                 
   let iter f l =
