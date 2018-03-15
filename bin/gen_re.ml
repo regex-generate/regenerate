@@ -87,6 +87,16 @@ let print_all backend re sigma n =
   |> CCOpt.map_or ~default:(fun x -> x) Sequence.take n
   |> Fmt.pr "%a@." (CCFormat.seq ~sep:(Fmt.unit "@.") W.pp)
 
+let count backend re sigma n =
+  let n = CCOpt.get_or ~default:1000 n in
+  let c = Mtime_clock.counter () in
+  let i =
+    setup backend sigma re
+    |> Sequence.take n
+    |> Sequence.length
+  in
+  Fmt.pr "Max count: %i@.Actual Count: %i@.Time: %a@." n i
+    Mtime.Span.pp (Mtime_clock.count c)
 
 let measure_until ~limit ~interval oc lang =
   let c = Mtime_clock.counter () in
@@ -117,21 +127,29 @@ let running_profile backend re sigma stutter limit =
 
 let gen_cmd =
   let info =
-    Term.info "gen"
+    Term.info "generate"
       ~doc:"Generate strings matching a given regular expression."
   in
   let t = Term.(const print_all $ backend $ re_arg $ sigma $ bound) in
   (t, info)
 
+let count_cmd =
+  let info =
+    Term.info "count"
+      ~doc:"Time language generation up to a certain number of strings."
+  in
+  let t = Term.(const count $ backend $ re_arg $ sigma $ bound) in
+  (t, info)
+
 let profile_cmd = 
   let info =
-    Term.info "regenerate"
+    Term.info "profile"
       ~doc:"Profile language generation for the given regular expression."
   in
   let t = Term.(const running_profile $ backend $ re_arg $ sigma $ stutter $ time_limit) in
   (t, info)
 
-let cmds = [ profile_cmd ; gen_cmd ]
+let cmds = [ profile_cmd ; count_cmd ; gen_cmd ]
 let default_cmd = 
   let doc = "Language generation for regular expressions." in
   let info = Term.info "regenerate" ~doc in
