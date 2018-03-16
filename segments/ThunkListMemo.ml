@@ -12,7 +12,7 @@ module Make (K : Sigs.OrderedMonoid) = struct
           | Nil -> Nil
           | Cons (x, tail) -> Cons (x, f' (i+1) tail)
         in
-        CCVector.set r i l;
+        CCVector.push r l;
         l
     in
     f' 0 f
