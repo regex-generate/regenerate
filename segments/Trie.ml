@@ -34,27 +34,17 @@ module Make(W : WORD)
 
   type +'a tree =
     | Empty
-    | Cons of char * 'a tree  (* simple case *)
-    | Node of 'a option * 'a tree M.t
+    | Leaf of 'a
+    | Node of 'a tree M.t
 
-  type t = elt tree
+  type t = unit tree
   
-  (* invariants:
-     - for Path(l,t) l is never empty
-     - for Node (None,map) map always has at least 2 elements
-     - for Node (Some _,map) map can be anything *)
-
   let empty = Empty
 
-  let _invariant = function
-    | Node (None, map) when M.is_empty map -> false
-    | _ -> true
-
   let rec _check_invariants = function
-    | Empty -> true
-    | Cons (_, t) -> _check_invariants t
-    | Node (None, map) when M.is_empty map -> false
-    | Node (_, map) ->
+    | Empty | Leaf (_ , _) -> true
+    | Node map ->
+      not (M.is_empty map) &&
       M.for_all (fun _ v -> _check_invariants v) map
 
   let is_empty = function
@@ -66,19 +56,19 @@ module Make(W : WORD)
   (** Smart constructors *)
 
   (* sub-tree t prefixed with c *)
-  let _cons c t = if is_empty t then Empty else Cons (c, t)
+  let _cons c t = if is_empty t then Empty else Node (M.singleton c t)
 
+  let _leaf x = Leaf x
+  
   (* build a Node value *)
-  let _node value map = match value with
-    | Some _ -> Node (value, map)
-    | None ->
+  let _node map =
       if M.is_empty map then Empty
       else
       if M.cardinal map = 1
       then
         let c, sub = M.min_binding map in
         _cons c sub
-      else Node (value,map)
+      else Node map
 
   let _node2 c1 t1 c2 t2 =
     match is_empty t1, is_empty t2 with
@@ -88,7 +78,7 @@ module Make(W : WORD)
     | false, false ->
       let map = M.add c1 t1 M.empty in
       let map = M.add c2 t2 map in
-      _node None map
+      _node map
   
   (** Inserting/Removing *)
   
@@ -103,21 +93,8 @@ module Make(W : WORD)
     (* first arg: current subtree and rebuild function; [c]: current char *)
     let goto (t, rebuild) c =
       match t with
-        | Empty -> empty, fun t -> rebuild (_cons c t)
-        | Cons (c', t') ->
-          if W.compare_char c c' = 0
-          then t', (fun t -> rebuild (_cons c t))
-          else
-            let rebuild' new_child =
-              rebuild (
-                if is_empty new_child then t
-                else
-                  let map = M.singleton c new_child in
-                  let map = M.add c' t' map in
-                  _node None map
-              ) in
-            empty, rebuild'
-        | Node (value, map) ->
+        | Empty | Leaf _ -> t, fun t -> rebuild (_cons c t)
+        | Node map ->
           try
             let t' = M.find c map in
             (* rebuild: we modify [t], so we put the new version in [map]
@@ -125,8 +102,8 @@ module Make(W : WORD)
             let rebuild' new_child =
               rebuild (
                 if is_empty new_child
-                then _node value (M.remove c map)
-                else _node value (M.add c new_child map)
+                then _node (M.remove c map)
+                else _node (M.add c new_child map)
               )
             in
             t', rebuild'
@@ -136,21 +113,18 @@ module Make(W : WORD)
               then rebuild t (* ignore *)
               else
                 let map' = M.add c new_child map in
-                rebuild (_node value map')
+                rebuild (_node map')
             in
             empty, rebuild'
     in
+    let leaf_or_empty rebuild o =  match f o with
+        | None -> rebuild (_node M.empty)
+        | Some x' -> rebuild (_leaf x')
+    in
     let finish (t,rebuild) = match t with
-      | Empty -> rebuild (_node (f None) M.empty)
-      | Cons (c, t') ->
-        rebuild
-          (match f None with
-            | None -> t
-            | Some _ as v -> _node v (M.singleton c t')
-          )
-      | Node (value, map) ->
-        let value' = f value in
-        rebuild (_node value' map)
+      | Leaf x -> leaf_or_empty rebuild @@ Some x
+      | Empty -> leaf_or_empty rebuild @@ None
+      | Node map -> rebuild (_node map)
     in
     let word = W.to_seq key in
     _fold_seq_and_then goto ~finish (t, _id) word
@@ -173,12 +147,9 @@ module Make(W : WORD)
       a function that prepends a list to some suffix *)
   let rec _fold f path t acc = match t with
     | Empty -> acc
-    | Cons (c, t') -> _fold f (_difflist_add path c) t' acc
-    | Node (v, map) ->
-      let acc = match v with
-        | None -> acc
-        | Some v -> f acc path v
-      in
+    | Leaf v -> f acc path v
+    (* | Cons (c, t') -> _fold f (_difflist_add path c) t' acc *)
+    | Node map ->
       M.fold
         (fun c t' acc -> _fold f (_difflist_add path c) t' acc)
         map acc
@@ -195,72 +166,75 @@ module Make(W : WORD)
       |> List.sort Pervasives.compare = List.sort Pervasives.compare l1
   *)
 
-  (* let iter f t =
-   *   _fold
-   *     (fun () path y -> f (W.of_list (path [])) y)
-   *     _id t () *)
+  let iter f t =
+    _fold
+      (fun () path y -> f (W.of_list (path [])) y)
+      _id t ()
 
-  let rec fold_values f acc t = match t with
-    | Empty -> acc
-    | Cons (_, t') -> fold_values f acc t'
-    | Node (v, map) ->
-      let acc = match v with
-        | None -> acc
-        | Some v -> f acc v
-      in
-      M.fold
-        (fun _c t' acc -> fold_values f acc t')
-        map acc
-
-  let iter_values f t = fold_values (fun () x -> f x) () t
+  (* let rec fold_values f acc t = match t with
+   *   | Empty -> acc
+   *   | Leaf v -> f acc v
+   *   (\* | Cons (_, t') -> fold_values f acc t' *\)
+   *   | Node map ->
+   *     M.fold
+   *       (fun _c t' acc -> fold_values f acc t')
+   *       map acc
+   * 
+   * let iter_values f t = fold_values (fun () x -> f x) () t *)
 
 
   (** Merging operations *)
-    
+  let _mk = function Some x -> _leaf x | None -> empty
+  
   let[@specialize] rec merge_with ~f ~left ~right t1 t2 = match t1, t2 with
-    | Empty, _ -> right t2
-    | _, Empty -> left t1
-    | Cons (c1,t1'), Cons (c2,t2') ->
-      if W.compare_char c1 c2 = 0
-      then _cons c1 (merge_with ~f ~left ~right t1' t2')
-      else _node2 c1 (left t1') c2 (right t2')
-
-    | Cons (c1, t1'), Node (value, map) ->
-      begin try
-          (* collision *)
-          let t2' = M.find c1 map in
-          let new_t = merge_with ~f ~left ~right t1' t2' in
-          let map' = if is_empty new_t
-            then M.remove c1 map
-            else M.add c1 new_t map
-          in
-          _node value map'
-        with Not_found ->
-          (* no collision *)
-          assert (not(is_empty t1'));
-          let t1' = left t1' in
-          let map' = if is_empty t1' then map else M.add c1 t1' map in
-          Node (value, map')
-      end
-    | Node (value, map), Cons (c2, t2') ->
-      begin try
-          (* collision *)
-          let t1' = M.find c2 map in
-          let new_t = merge_with ~f ~left ~right t1' t2' in
-          let map' = if is_empty new_t
-            then M.remove c2 map
-            else M.add c2 new_t map
-          in
-          _node value map'
-        with Not_found ->
-          (* no collision *)
-          assert (not(is_empty t2'));
-          let t2' = left t2' in
-          let map' = if is_empty t2' then map else M.add c2 t2' map in
-          Node (value, map')
-      end
-    | Node(v1, map1), Node (v2, map2) ->
-      let v = f v1 v2 in
+    | Empty, Empty -> f None None
+    | Empty, Node _ -> right t2
+    | Node _, Empty -> left t1
+    | Leaf v, Empty -> f (Some v) None
+    | Empty, Leaf v -> f None (Some v)
+    | Leaf v, Leaf v' -> f (Some v) (Some v')
+    | Leaf _, Node _ | Node _, Leaf _ -> assert false
+    (* | Cons (c1,t1'), Cons (c2,t2') ->
+     *   if W.compare_char c1 c2 = 0
+     *   then _cons c1 (merge_with ~f ~left ~right t1' t2')
+     *   else _node2 c1 (left t1') c2 (right t2')
+     * 
+     * | Cons (c1, t1'), Node (value, map) ->
+     *   begin try
+     *       (\* collision *\)
+     *       let t2' = M.find c1 map in
+     *       let new_t = merge_with ~f ~left ~right t1' t2' in
+     *       let map' = if is_empty new_t
+     *         then M.remove c1 map
+     *         else M.add c1 new_t map
+     *       in
+     *       _node value map'
+     *     with Not_found ->
+     *       (\* no collision *\)
+     *       assert (not(is_empty t1'));
+     *       let t1' = left t1' in
+     *       let map' = if is_empty t1' then map else M.add c1 t1' map in
+     *       Node (value, map')
+     *   end
+     * | Node (value, map), Cons (c2, t2') ->
+     *   begin try
+     *       (\* collision *\)
+     *       let t1' = M.find c2 map in
+     *       let new_t = merge_with ~f ~left ~right t1' t2' in
+     *       let map' = if is_empty new_t
+     *         then M.remove c2 map
+     *         else M.add c2 new_t map
+     *       in
+     *       _node value map'
+     *     with Not_found ->
+     *       (\* no collision *\)
+     *       assert (not(is_empty t2'));
+     *       let t2' = left t2' in
+     *       let map' = if is_empty t2' then map else M.add c2 t2' map in
+     *       Node (value, map')
+     *   end *)
+    | Node map1, Node map2 ->
+      (* let v = f v1 v2 in *)
       let as_option t = if is_empty t then None else Some t in 
       let map' = M.merge
           (fun _c t1 t2 -> match t1, t2 with
@@ -272,29 +246,29 @@ module Make(W : WORD)
                as_option new_t
           ) map1 map2
       in
-      _node v map'
+      _node map'
 
   let keep x = x
   let drop _ = Empty
   
   let union l l' =
     let left = keep and right = keep and f a b = match a,b with
-      | Some _, _ -> a
-      | None, _ -> b
+      | Some _, _ -> _mk a
+      | None, _ -> _mk b
     in
     merge_with ~f ~left ~right l l'
 
   let inter l l' = 
     let left = drop and right = drop and f a b = match a,b with
-      | Some _, Some _ -> a
-      | _ -> None
+      | Some _, Some _ -> _mk a
+      | _ -> empty
     in
     merge_with ~f ~left ~right l l'
 
   let diff l l' =
     let left = keep and right = drop and f a b = match a,b with
-      | Some _, None -> a
-      | _ -> None
+      | Some _, None -> _mk a
+      | _ -> empty
     in 
     merge_with ~f ~left ~right l l'
 
@@ -303,27 +277,23 @@ module Make(W : WORD)
 
   (** Grafting/flatmap *)
 
-  let map f t =
-    let rec map_ = function
-      | Empty -> Empty
-      | Cons (c, t') -> Cons (c, map_ t')
-      | Node (v, map) ->
-        let v' = match v with
-          | None -> None
-          | Some v -> Some (f v)
-        in let map' = M.map map_ map
-        in Node (v', map')
-    in map_ t
+  (* let map f t =
+   *   let rec map_ = function
+   *     | Empty -> Empty
+   *     (\* | Cons (c, t') -> Cons (c, map_ t') *\)
+   *     | Leaf x -> Leaf (f x)
+   *     | Node map ->
+   *       let map' = M.map map_ map
+   *       in Node map'
+   *   in map_ t *)
 
   let rec append t t0 = match t with
     | Empty -> Empty
-    | Cons (c, t') -> Cons (c, append t' t0)
-    | Node (Some s, m) ->
-      assert (M.is_empty m);
-      map (fun x -> W.append s x) t0
-    | Node (v, map) ->
+    | Leaf _v -> t0
+    (* | Cons (c, t') -> Cons (c, append t' t0) *)
+    | Node map ->
       let map = M.map (fun t' -> append t' t0) map in
-      Node (v, map)
+      Node map
   
   (** Misc *)
   
@@ -337,13 +307,13 @@ module Make(W : WORD)
    *       map s *)
 
   let of_list l =
-    List.fold_left (fun acc v -> add v v acc) empty l
+    List.fold_left (fun acc v -> add v () acc) empty l
 
-  let to_seq t k = iter_values k t
+  let to_seq t k = iter (fun x () -> k x) t
 
   (** External API *)
 
-  let return x = singleton x x
+  let return x = singleton x ()
   let memoize x = x
   
 end
