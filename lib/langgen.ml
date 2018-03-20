@@ -115,11 +115,8 @@ module[@inline always] Make
 
   
   let sigma_star sigma =
-    let f term_k' =
-      Segment.append term_k' sigma
-    in
     let rec collect acc () =
-      Iter.Cons (acc, collect (f acc))
+      Iter.Cons (acc, collect (Segment.append sigma acc))
     in
     collect segmentEpsilon
 

@@ -32,12 +32,12 @@ module Make(W : WORD)
       let compare = W.compare_char
     end)
 
-  type +'a tree =
+  type +'a trie =
     | Empty
     | Leaf of 'a
-    | Node of 'a tree M.t
+    | Node of 'a trie M.t
 
-  type t = unit tree
+  type t = unit trie
   
   let empty = Empty
 
