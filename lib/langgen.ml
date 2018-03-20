@@ -113,6 +113,17 @@ module[@inline always] Make
       let mS = M.singleton 0 segmentEpsilon in
       Iter.Cons (segmentEpsilon, collect 1 mS seq [])
 
+  let add_epsilon x () = match x () with
+    | Iter.Ret Nothing -> assert false
+    | Cons (_, t) -> Iter.Cons (segmentEpsilon, t)
+  
+  let rec rep i j re = match (i, j, re) with
+    | 0, None, re -> star re
+    | 0, Some y, re ->
+      add_epsilon @@ concatenate re @@ rep 0 (Some (y - 1)) re
+    | i, j, re ->
+      concatenate re @@ rep (i-1) (CCOpt.map (fun j -> j - 1) j) re
+    
   
   let sigma_star sigma =
     let rec collect acc () =
@@ -136,7 +147,7 @@ module[@inline always] Make
       | Or (r1, r2) -> union (g r1) (g r2)
       | And (r1, r2) -> inter (g r1) (g r2)
       | Not r -> difference sigma_star (g r)
-      | Star r -> star (g r)
+      | Rep (i, j, r) -> rep i j (g r)
     in
     g
 

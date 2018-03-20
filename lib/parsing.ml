@@ -37,8 +37,7 @@ let parse s =
         begin match j with
             Some j when j < i -> raise Parse_error | _ -> ()
         end;
-        raise Not_supported
-        (* Regex.rep i j r *)
+        Regex.rep i j r
       | None ->
         unget (); r
     else

@@ -7,7 +7,7 @@ type 'a t
   | Or of 'a t * 'a t
   | And of 'a t * 'a t
   | Not of 'a t
-  | Star of 'a t
+  | Rep of int * int option * 'a t
 
 
 let epsilon = One
@@ -35,6 +35,7 @@ let alt x y = Or (x,y)
 let inter x y = And (x,y)
 let compl x = Not x
 
-let star x = Star x
-let plus x = Seq (x, star x)
-let opt x = Or (x, One)
+let rep i j x = Rep (i, j, x)
+let star x = rep 0 None x
+let plus x = rep 1 None x
+let opt x = rep 0 (Some 1) x
