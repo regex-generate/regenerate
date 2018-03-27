@@ -1,5 +1,4 @@
 module L = CCLazy_list
-open L.Infix
 
 let next = Lazy.force
 
@@ -67,8 +66,34 @@ module Make (K : Sigs.OrderedMonoid) = struct
     in
     merge_with keep drop f
 
-  let append l1 l2 =
-    l1 >>= fun x -> l2 >|= fun y -> K.append x y
+  (** Append *)
+
+
+  let rec rev_append a b =
+    lazy (
+      match a with
+      | lazy L.Nil -> Lazy.force b
+      | lazy (Cons (x,tl)) -> Lazy.force @@ rev_append tl (L.cons x b)
+    )
+  let rec rev_map ~f l acc =
+    lazy (
+      match l with
+      | lazy L.Nil -> Lazy.force @@ acc
+      | lazy (Cons (x,tl)) -> Lazy.force @@ rev_map ~f tl @@ L.cons (f x) acc
+    )
+  
+  let rec append l1 l2 =  
+    lazy (
+      match l1 with
+      | lazy L.Nil -> L.Nil
+      | lazy (Cons (x,tl)) ->
+        let res =
+          rev_append
+            (rev_map ~f:(K.append x) l2 L.empty)
+            (append tl l2)
+        in
+        Lazy.force res
+    )
 
   let merge l =
     let cmp (v1,_) (v2,_) = K.compare v1 v2 in
