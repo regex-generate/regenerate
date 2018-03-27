@@ -102,57 +102,65 @@ module[@inline always] Make
   
   (** Concatenation *)
     
-  let explode_head seq bound n =
+  let[@inline] explode_head seq vec bound indices n =
     match bound with
-    | Some _ -> Segment.empty, nothing, bound
+    | Some _ -> nothing, bound, indices
     | None -> match seq() with
-      | Iter.Ret Nothing -> Segment.empty, nothing, Some n
-      | Ret Everything -> Sigma_star.get n, everything, None
-      | Cons (seg, s) -> seg, s, None
+      | Iter.Ret Nothing -> nothing, Some n, indices
+      | Ret Everything ->
+        let segm = Sigma_star.get n in
+        CCVector.push vec segm ;
+        everything, None, (n :: indices)
+      | Cons (segm, s) ->
+        CCVector.push vec segm ;
+        s, None, (n :: indices)
+  
+  let concat_subterms_of_length ~n ~f validIndicesA vecA vecB =
+    let rec combine_segments = function
+      | [] -> []
+      | i :: l ->
+        (* indices are in decreasing order, we can bail early. *)
+        if n - i >= CCVector.size vecB then []
+        else
+          f ~a:(CCVector.get vecA i) (CCVector.get vecB (n - i))
+          :: combine_segments l
+    in
+    validIndicesA
+    |> combine_segments
+    |> Segment.merge
 
-  let rec combine_segments f n acc seq l = match seq(), l with
-    | _, []
-    | Iter.Ret Nothing, _ -> acc
-    | Ret Everything, seg' :: l ->
-      let acc = f ~seq:(Sigma_star.get n) seg' :: acc in
-      combine_segments f (n+1) acc everything l
-    | Cons (seg, seq), seg' :: l ->
-      let acc = f ~seq:seg seg' :: acc in
-      combine_segments f (n+1) acc seq l 
-
-  let combine_segments_right seqL l =
-    Segment.merge @@
-    combine_segments (fun ~seq x -> Segment.append seq x) 0 [] seqL l
-  let combine_segments_left l seqR =
-    Segment.merge @@
-    combine_segments (fun ~seq x -> Segment.append x seq) 0 [] seqR l
+  let combine_segments_left ~n indL vecL vecR =
+    concat_subterms_of_length
+      ~n ~f:(fun ~a b -> Segment.append a b) indL vecL vecR
+  let combine_segments_right ~n vecL indR vecR =
+    concat_subterms_of_length
+      ~n ~f:(fun ~a b -> Segment.append b a) indR vecR vecL
   
   let concatenate seqL0 seqR0 =
-    let rec collect_right n seqL seqR boundL boundR accL accR () =
-      let headL, seqL, boundL = explode_head seqL boundL n in
-      let headR, seqR, boundR = explode_head seqR boundR n in
+    let vecL = CCVector.make 0 Segment.empty in
+    let vecR = CCVector.make 0 Segment.empty in
+    let rec collect_right n seqL seqR boundL boundR indL indR () =
+      let seqL, boundL, indL = explode_head seqL vecL boundL indL n in
+      let seqR, boundR, indR = explode_head seqR vecR boundR indR n in
       let bound = CCOpt.map2 (+) boundL boundR in
-      let accR = Segment.memoize headR :: accR in
-      let accL = Segment.memoize headL :: accL in
       match bound with
       | Some b when n >= b - 1 -> nothing_
       | _ ->
-        let head = combine_segments_right seqL0 accR in
+        let head = combine_segments_right ~n vecL indR vecR in
         match boundR with
         | Some _ ->
-          Iter.Cons (head, collect_right (n+1) seqL seqR boundL boundR accL accR)
+          Iter.Cons (head, collect_right (n+1) seqL seqR boundL boundR indL indR)
         | None ->
-          Iter.Cons (head, collect_left (n+1) seqL seqR boundL boundR accL)
-    and collect_left n seqL seqR boundL boundR accL () =
-      let headL, seqL, boundL = explode_head seqL boundL n in
-      let _headR, seqR, boundR = explode_head seqR boundR n in
+          Iter.Cons (head, collect_left (n+1) seqL seqR boundL boundR indL indR)
+    and collect_left n seqL seqR boundL boundR indL indR () =
+      let seqL, boundL, indL = explode_head seqL vecL boundL indL n in
+      let seqR, boundR, indR = explode_head seqR vecR boundR indR n in
       let bound = CCOpt.map2 (+) boundL boundR in
-      let accL = Segment.memoize headL :: accL in
       match bound with
       | Some b when n >= b - 1 -> nothing_
       | _ ->
-        let head = combine_segments_left accL seqR0 in
-        let tail = collect_left (n+1) seqL seqR boundL boundR accL in
+        let head = combine_segments_left ~n indL vecL vecR in
+        let tail = collect_left (n+1) seqL seqR boundL boundR indL indR in
         Iter.Cons (head, tail)
     in
     collect_right 0 seqL0 seqR0 None None [] []
