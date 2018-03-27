@@ -149,9 +149,9 @@ module[@inline always] Make
       | _ ->
         let head = combine_segments_right ~n vecL indR vecR in
         match boundR with
-        | Some _ ->
-          Iter.Cons (head, collect_right (n+1) seqL seqR boundL boundR indL indR)
         | None ->
+          Iter.Cons (head, collect_right (n+1) seqL seqR boundL boundR indL indR)
+        | Some _ ->
           Iter.Cons (head, collect_left (n+1) seqL seqR boundL boundR indL indR)
     and collect_left n seqL seqR boundL boundR indL indR () =
       let seqL, boundL, indL = explode_head seqL vecL boundL indL n in
