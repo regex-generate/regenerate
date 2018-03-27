@@ -24,13 +24,30 @@ let get_impl_mod : segment_impl -> (module S) = let open Segments in function
   | StrictSet -> (module StrictSet)
   | Trie -> (module Trie.Make)
 
-let get_impl ~impl ~sigma re =
+let[@inline] make_impl ~impl =
   let module M = (val get_impl_mod impl) in
   let module S = M(W) in
-  let sigma = S.of_list @@ List.map W.singleton @@ CCString.to_list sigma in
-  let module Sigma = struct type t = S.t let sigma = sigma end in
-  let module A = Regenerate.Make (W) (S) (Sigma) in
-  A.flatten @@ A.gen re
+  let module A = Regenerate.Make (W) (S) in
+  fun[@inline] ~sigma ->
+    let sigma = S.of_list @@ List.map W.singleton @@ CCString.to_list sigma in
+    let module Sigma = struct type t = S.t let sigma = sigma end in
+    let module A = A (Sigma) in
+    fun re -> A.flatten @@ A.gen re
+
+let tl = make_impl ~impl:ThunkList ~sigma:"ab"
+let tlm = make_impl ~impl:ThunkListMemo ~sigma:"ab"
+let ll = make_impl ~impl:LazyList ~sigma:"ab"
+let set = make_impl ~impl:StrictSet ~sigma:"ab"
+let trie = make_impl ~impl:Trie ~sigma:"ab"
+
+let get_impl ~impl ~sigma = if sigma <> "ab" then
+    make_impl ~impl ~sigma
+  else match impl with
+  | ThunkList -> tl
+  | ThunkListMemo -> tlm
+  | LazyList -> ll
+  | StrictSet -> set
+  | Trie -> trie
 
 let backend = 
   let doc = Arg.info ~docv:"IMPLEM" ~doc:"Implementation to use."
