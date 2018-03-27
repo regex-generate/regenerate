@@ -113,20 +113,21 @@ module[@inline always] Make
         everything, None, (n :: indices)
       | Cons (segm, s) ->
         CCVector.push vec @@ Segment.memoize segm ;
-        s, None, (n :: indices)
+        s, None, (if Segment.is_empty segm then indices else n :: indices)
   
   let concat_subterms_of_length ~n ~f validIndicesA vecA vecB =
-    let rec combine_segments = function
-      | [] -> []
+    let rec combine_segments acc = function
+      | [] -> acc
       | i :: l ->
         (* indices are in decreasing order, we can bail early. *)
-        if n - i >= CCVector.size vecB then []
+        if n - i >= CCVector.size vecB then acc
         else
-          f ~a:(CCVector.get vecA i) (CCVector.get vecB (n - i))
-          :: combine_segments l
+          combine_segments
+            (f ~a:(CCVector.get vecA i) (CCVector.get vecB (n - i)) :: acc)
+            l
     in
     validIndicesA
-    |> combine_segments
+    |> combine_segments []
     |> Segment.merge
 
   let combine_segments_left ~n indL vecL vecR =
