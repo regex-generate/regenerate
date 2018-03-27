@@ -110,26 +110,30 @@ module[@inline always] Make
       | Ret Everything -> Sigma_star.get n, everything, None
       | Cons (seg, s) -> seg, s, None
 
-  let rec combine_segments f n seq l = match seq(), l with
+  let rec combine_segments f n acc seq l = match seq(), l with
     | _, []
-    | Iter.Ret Nothing, _ -> []
+    | Iter.Ret Nothing, _ -> acc
     | Ret Everything, seg' :: l ->
-      f ~seq:(Sigma_star.get n) seg' :: combine_segments f (n+1) everything l
+      let acc = f ~seq:(Sigma_star.get n) seg' :: acc in
+      combine_segments f (n+1) acc everything l
     | Cons (seg, seq), seg' :: l ->
-      f ~seq:seg seg' :: combine_segments f (n+1) seq l
+      let acc = f ~seq:seg seg' :: acc in
+      combine_segments f (n+1) acc seq l 
 
   let combine_segments_right seqL l =
-    Segment.merge @@ combine_segments (fun ~seq x -> Segment.append seq x) 0 seqL l
+    Segment.merge @@
+    combine_segments (fun ~seq x -> Segment.append seq x) 0 [] seqL l
   let combine_segments_left l seqR =
-    Segment.merge @@ combine_segments (fun ~seq x -> Segment.append x seq) 0 seqR l
+    Segment.merge @@
+    combine_segments (fun ~seq x -> Segment.append x seq) 0 [] seqR l
   
   let concatenate seqL0 seqR0 =
     let rec collect_right n seqL seqR boundL boundR accL accR () =
       let headL, seqL, boundL = explode_head seqL boundL n in
       let headR, seqR, boundR = explode_head seqR boundR n in
       let bound = CCOpt.map2 (+) boundL boundR in
-      let accR = headR :: accR in
-      let accL = headL :: accL in
+      let accR = Segment.memoize headR :: accR in
+      let accL = Segment.memoize headL :: accL in
       match bound with
       | Some b when n >= b - 1 -> nothing_
       | _ ->
@@ -143,7 +147,7 @@ module[@inline always] Make
       let headL, seqL, boundL = explode_head seqL boundL n in
       let _headR, seqR, boundR = explode_head seqR boundR n in
       let bound = CCOpt.map2 (+) boundL boundR in
-      let accL = headL :: accL in
+      let accL = Segment.memoize headL :: accL in
       match bound with
       | Some b when n >= b - 1 -> nothing_
       | _ ->

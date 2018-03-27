@@ -45,7 +45,7 @@ module Make (K : Sigs.OrderedMonoid) = struct
       let i = K.compare x y in
       if i = 0 then      Drop, Drop, Some x
       else if i < 0 then Drop, Keep, Some x
-      else               Keep, Drop, Some x
+      else               Keep, Drop, Some y
     in
     merge_with keep keep f
 
