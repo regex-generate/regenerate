@@ -31,8 +31,10 @@ module[@inline always] Make
   (** Utilities *)
   
   let segmentEpsilon = Segment.return W.empty
-  let nothing () = Iter.Ret Nothing
-  let everything () = Iter.Ret Everything
+  let nothing_ = Iter.Ret Nothing
+  let nothing () = nothing_
+  let everything_ = Iter.Ret Everything
+  let everything () = everything_
 
   module IMap = struct
     include CCMap.Make(CCInt)
@@ -45,19 +47,26 @@ module[@inline always] Make
   module Sigma_star = struct
     type t = (Segment.t, CCVector.rw) CCVector.t 
 
-    let v = CCVector.return segmentEpsilon
+    let v = CCVector.make 1 segmentEpsilon
 
     let rec complete_from_to i j =
-      if i > j then CCVector.get v i
+      if i > j then ()
       else
         let s = Segment.append Sigma.sigma (CCVector.get v (i-1)) in
-        CCVector.set v i s;
+        CCVector.push v s;
         complete_from_to (i+1) j
             
     let get i =
+      assert (i >= 0);
+      (* Fmt.epr "Sigma_star.%i@." i ; *)
       let l = CCVector.size v in
+      (* Fmt.epr "Sigma_star.size = %i@." l ; *)
       if i < l then CCVector.get v i
-      else complete_from_to l i
+      else begin
+        CCVector.ensure_with ~init:Segment.empty v (i+1);
+        complete_from_to l i ;
+        CCVector.get v i
+      end
 
     let rec iter n k =
       k (get n) ;
@@ -74,14 +83,14 @@ module[@inline always] Make
         
   let rec inter s1 s2 () = let open Iter in match s1(), s2() with
     | Ret Everything, x | x, Ret Everything -> x
-    | Ret Nothing, _ | _, Ret Nothing -> Ret Nothing
+    | Ret Nothing, _ | _, Ret Nothing -> nothing_
     | Cons (x1, next1), Cons (x2, next2) ->
       Cons (Segment.inter x1 x2, inter next1 next2)
 
   let rec difference_aux i s1 s2 () =
     let open Iter in match s1(), s2() with
-    | Ret Nothing, _ -> Ret Nothing
-    | _, Ret Everything -> Ret Nothing
+    | Ret Nothing, _ -> nothing_
+    | _, Ret Everything -> nothing_
     | x, Ret Nothing -> x
     | Ret Everything, Cons (x2, next2) ->
       Cons (Segment.diff (Sigma_star.get i) x2,
@@ -93,59 +102,73 @@ module[@inline always] Make
   
   (** Concatenation *)
     
-  let concatenate =
-    let subterms_of_length map1 map2 n =
-      let combine_segments i =
-        if IMap.mem i map1 && IMap.mem (n - i) map2 
-        then Segment.append (IMap.find i map1) (IMap.find (n - i) map2)
-        else Segment.empty
-      in
-      CCList.(0 -- n)
-      |> List.rev_map combine_segments
-      |> Segment.merge
+  let explode_head seq bound n =
+    match bound with
+    | Some _ -> Segment.empty, nothing, bound
+    | None -> match seq() with
+      | Iter.Ret Nothing -> Segment.empty, nothing, Some n
+      | Ret Everything -> Sigma_star.get n, everything, None
+      | Cons (seg, s) -> seg, s, None
+
+  let rec combine_segments f n seq l = match seq(), l with
+    | _, []
+    | Iter.Ret Nothing, _ -> []
+    | Ret Everything, seg' :: l ->
+      f ~seq:(Sigma_star.get n) seg' :: combine_segments f (n+1) everything l
+    | Cons (seg, seq), seg' :: l ->
+      f ~seq:seg seg' :: combine_segments f (n+1) seq l
+
+  let combine_segments_right seqL l =
+    Segment.merge @@ combine_segments (fun ~seq x -> Segment.append seq x) 0 seqL l
+  let combine_segments_left l seqR =
+    Segment.merge @@ combine_segments (fun ~seq x -> Segment.append x seq) 0 seqR l
+  
+  let concatenate seqL0 seqR0 =
+    let rec collect_right n seqL seqR boundL boundR accL accR () =
+      let headL, seqL, boundL = explode_head seqL boundL n in
+      let headR, seqR, boundR = explode_head seqR boundR n in
+      let bound = CCOpt.map2 (+) boundL boundR in
+      let accR = headR :: accR in
+      let accL = headL :: accL in
+      match bound with
+      | Some b when n >= b - 1 -> nothing_
+      | _ ->
+        let head = combine_segments_right seqL0 accR in
+        match boundR with
+        | Some _ ->
+          Iter.Cons (head, collect_right (n+1) seqL seqR boundL boundR accL accR)
+        | None ->
+          Iter.Cons (head, collect_left (n+1) seqL seqR boundL boundR accL)
+    and collect_left n seqL seqR boundL boundR accL () =
+      let headL, seqL, boundL = explode_head seqL boundL n in
+      let _headR, seqR, boundR = explode_head seqR boundR n in
+      let bound = CCOpt.map2 (+) boundL boundR in
+      let accL = headL :: accL in
+      match bound with
+      | Some b when n >= b - 1 -> nothing_
+      | _ ->
+        let head = combine_segments_left accL seqR0 in
+        let tail = collect_left (n+1) seqL seqR boundL boundR accL in
+        Iter.Cons (head, tail)
     in
-    let[@inline] rec do_merge n map1 map2 segm1 segm2 seq1 seq2 =
-      let map1 = IMap.save n segm1 map1 in 
-      let map2 = IMap.save n segm2 map2 in
-      Iter.Cons (subterms_of_length map1 map2 n,
-                 collect (n+1) map1 map2 seq1 seq2)
-    and collect n map1 map2 seq1 seq2 () =
-      let open Iter in match seq1 (), seq2 () with
-      | Ret _, Ret _ -> (??)
-      | Ret Nothing, Cons (segm2, seq2) ->
-        let map2 = IMap.save n segm2 map2 in
-        Cons (subterms_of_length map1 map2 n,
-              collect (n+1) map1 map2 seq1 seq2)
-      | Cons (segm1, seq1), Ret Nothing -> 
-        let map1 = IMap.save n segm1 map1 in
-        Cons (subterms_of_length map1 map2 n,
-              collect (n+1) map1 map2 seq1 seq2)
-      | Ret Everything, Cons (segm2, seq2) ->
-        let segm1 = Sigma_star.get n in
-        do_merge n map1 map2 segm1 segm2 seq1 seq2
-      | Cons (segm1, seq1), Ret Everything ->
-        let segm2 = Sigma_star.get n in
-        do_merge n map1 map2 segm1 segm2 seq1 seq2
-      | Cons (segm1, seq1), Cons (segm2, seq2) ->
-        do_merge n map1 map2 segm1 segm2 seq1 seq2
-    in 
-    collect 0 IMap.empty IMap.empty
-    
+    collect_right 0 seqL0 seqR0 None None [] []
+
+  
   (** Star *)
    
-  let star =
-    let subterms_of_length ~stop validIndices mapS =
-      let combine_segments (i, segm) =
-        match IMap.get (stop - i) mapS with
-        | None -> Segment.empty
-        | Some s -> Segment.append segm s
-      in
-      validIndices
-      |> List.rev_map combine_segments
-      |> Segment.merge
+  let star_subterms_of_length ~max validIndices mapS =
+    let combine_segments (i, segm) =
+      match IMap.get (max - i) mapS with
+      | None -> Segment.empty
+      | Some s -> Segment.append segm s
     in
+    validIndices
+    |> List.rev_map combine_segments
+    |> Segment.merge
+
+  let star =
     let rec do_star n mapS seq validIndices = 
-      let segmS = subterms_of_length ~stop:n validIndices mapS in
+      let segmS = star_subterms_of_length ~max:n validIndices mapS in
       let mapS = IMap.save n segmS mapS in
       Iter.Cons (segmS, collect (n+1) mapS seq validIndices)
     and collect n mapS seq validIndices () = match seq () with
@@ -154,7 +177,9 @@ module[@inline always] Make
         do_star n mapS nothing validIndices
       | Cons (segm, seq) ->
         let validIndices =
-          if Segment.is_empty segm then validIndices else (n, segm) :: validIndices
+          if Segment.is_empty segm
+          then validIndices
+          else (n, segm) :: validIndices
         in
         do_star n mapS seq validIndices
     in
@@ -164,6 +189,7 @@ module[@inline always] Make
       | Cons (_, seq) ->
         let mS = IMap.singleton 0 segmentEpsilon in
         Iter.Cons (segmentEpsilon, collect 1 mS seq [])
+
 
   let add_epsilon x () = match x () with
     | Iter.Ret Nothing -> Iter.Cons (segmentEpsilon, nothing)
@@ -182,27 +208,26 @@ module[@inline always] Make
 
   (****)
 
-  let rec flatten n s k = match s () with
-    | Iter.Ret Nothing -> Sequence.empty
+  let rec flatten_from n s k = match s () with
+    | Iter.Ret Nothing -> ()
     | Iter.Ret Everything ->
       Sigma_star.iter n (fun s -> Segment.to_seq s k)
     | Cons (x, s) ->
       Segment.to_seq x k;
-      flatten (n+1) s k 
-  
-  let gen ~sigma =
-    let rec g (r : _ Regex.t) : lang = match r with
-      | Zero -> nothing
-      | One -> segmentEpsilon @: nothing
-      | Atom x -> Segment.empty @: (Segment.return @@ W.singleton x) @: nothing
-      | Seq (r1, r2) -> concatenate (g r1) (g r2)
-      | Or (r1, r2) -> union (g r1) (g r2)
-      | And (r1, r2) -> inter (g r1) (g r2)
-      | Not r -> difference everything (g r)
-      | Rep (i, j, r) -> rep i j (g r)
-    in
-    g
+      flatten_from (n+1) s k
 
+  let flatten s = flatten_from 0 s
+  
+  let rec gen : W.char Regex.t -> lang = function
+    | Zero -> nothing
+    | One -> segmentEpsilon @: nothing
+    | Atom x -> Segment.empty @: (Segment.return @@ W.singleton x) @: nothing
+    | Seq (r1, r2) -> concatenate (gen r1) (gen r2)
+    | Or (r1, r2) -> union (gen r1) (gen r2)
+    | And (r1, r2) -> inter (gen r1) (gen r2)
+    | Not r -> difference everything (gen r)
+    | Rep (i, j, r) -> rep i j (gen r)
+  
   (** Utils *)
 
   let pp_item pp_word =

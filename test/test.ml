@@ -1,10 +1,12 @@
 open Regenerate
 
 (* module W = Word.List(Char) *)
-module C = Char
 module W = Word.String
-module S = Segments.Trie.String
-module L = Make (Char) (W) (S)
+module S = Segments.ThunkList(W)
+module Sigma = struct type t = S.t
+  let sigma = S.of_list ["a"; "b" ; "c"]
+end
+module L = Make (W) (S) (Sigma)
 
 let assert_sorted s =
   let rec aux x = function
@@ -25,16 +27,17 @@ let assert_sorted s =
  * let l = !!["a"; "ab"; "c" ;"abc"]
  * let a = !!["a"] *)
 
-let sigma = S.of_list ["a"; "b" ; "c"]
-
 let langs = [|
   Seq (Not (Atom 'a'), Atom 'a') ;
-  Star (Atom 'a') ;
-  Star (Seq (Atom 'a', Star (Atom 'b'))) ;
-  Star (Seq (Or (Atom 'a', One), Star (Atom 'b'))) ;
+  star (Atom 'a') ;
+  star (Seq (Atom 'a', star (Atom 'b'))) ;
+  star (Seq (Or (Atom 'a', One), star (Atom 'b'))) ;
 |]
 
 let id x = x
+
+let pp_seg = L.pp_item (Fmt.quote W.pp)
+let pp = L.pp (Fmt.quote W.pp)
 
 let print_all ?n (lang : L.lang) =
   lang
@@ -79,3 +82,11 @@ let measure_until ~limit ~interval oc lang =
   close_out oc ;
   !r
                                                     
+(*
+
+open Regenerate ;;
+open Test ;;
+#install_printer pp_seg ;;
+#install_printer pp ;;
+
+*)

@@ -109,10 +109,10 @@ let rec take n e l () =
  *     else
  *       cons e s *)
 
-let rec drop n s =
-  if n <= 0 then s else match s () with
-    | Ret _ as x -> fun () -> x
-    | Cons(e, s) -> drop (n-1) s
+(* let rec drop n s =
+ *   if n <= 0 then s else match s () with
+ *     | Ret _ as x -> fun () -> x
+ *     | Cons(e, s) -> drop (n-1) s *)
 
 let rec for_all f s = match s () with
   | Ret _ -> true

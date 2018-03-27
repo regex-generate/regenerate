@@ -2,31 +2,35 @@ open Regenerate
 open Cmdliner
 
 module W = Word.String
-module S = Segments.Trie.String
 
-type segment_imple =
+type segment_impl =
   | ThunkList
   | ThunkListMemo
   | LazyList
   | StrictSet
   | Trie
 
-module LThunkList = Make (Word.String) (Segments.ThunkList (Word.String))
-module LThunkListMemo = Make (Word.String) (Segments.ThunkListMemo (Word.String))
-module LLazyList = Make (Word.String) (Segments.LazyList (Word.String))
-module LStrictSet = Make (Word.String) (Segments.StrictSet (Word.String))
-module LTrie = Make (Word.String) (Segments.Trie.Make (Word.String))
+module type ARG = sig
+  include Segments.OrderedMonoid
+  include Segments.Trie.WORD with type t := t
+end
+module type S =
+  functor (W : ARG) -> (Segments.S with type elt = W.t)
 
-let comp f g h sigma re =
-  let sigma = h @@ List.map W.singleton @@ CCString.to_list sigma in
-  g @@ f ~sigma re 
+let get_impl_mod : segment_impl -> (module S) = let open Segments in function
+  | ThunkList -> (module ThunkList)
+  | ThunkListMemo -> (module ThunkListMemo)
+  | LazyList -> (module LazyList)
+  | StrictSet -> (module StrictSet)
+  | Trie -> (module Trie.Make)
 
-let get_impl  = function
-  | ThunkList -> comp LThunkList.gen LThunkList.flatten LThunkList.Segment.of_list
-  | ThunkListMemo -> comp LThunkListMemo.gen LThunkListMemo.flatten LThunkListMemo.Segment.of_list
-  | LazyList -> comp LLazyList.gen LLazyList.flatten LLazyList.Segment.of_list
-  | StrictSet -> comp LStrictSet.gen LStrictSet.flatten LStrictSet.Segment.of_list
-  | Trie -> comp LTrie.gen LTrie.flatten LTrie.Segment.of_list
+let get_impl ~impl ~sigma re =
+  let module M = (val get_impl_mod impl) in
+  let module S = M(W) in
+  let sigma = S.of_list @@ List.map W.singleton @@ CCString.to_list sigma in
+  let module Sigma = struct type t = S.t let sigma = sigma end in
+  let module A = Regenerate.Make (W) (S) (Sigma) in
+  A.flatten @@ A.gen re
 
 let backend = 
   let doc = Arg.info ~docv:"IMPLEM" ~doc:"Implementation to use."
@@ -82,20 +86,20 @@ let sigma =
   let default = OSeq.to_string @@ CCOpt.get_exn @@ enumerate ' ' '~' in
   Arg.(value & opt string default & doc)
 
-let setup backend re sigma = 
+let setup ~impl ~sigma re = 
   Fmt_tty.setup_std_outputs ();
-  get_impl backend re sigma
+  get_impl ~impl ~sigma re
 
-let print_all backend re sigma n =
-  setup backend sigma re
+let print_all impl sigma re n =
+  setup ~impl ~sigma re
   |> CCOpt.map_or ~default:(fun x -> x) Sequence.take n
   |> Fmt.pr "%a@." (CCFormat.seq ~sep:(Fmt.unit "@.") W.pp)
 
-let count backend re sigma n =
+let count impl sigma re n =
   let n = CCOpt.get_or ~default:1000 n in
   let c = Mtime_clock.counter () in
   let i =
-    setup backend sigma re
+    setup ~impl ~sigma re
     |> Sequence.take n
     |> Sequence.length
   in
@@ -122,9 +126,9 @@ let measure_until ~limit ~interval oc lang =
   close_out oc ;
   ()
 
-let running_profile backend re sigma stutter limit =
+let running_profile impl re sigma stutter limit =
   let oc = stdout in
-  setup backend sigma re
+  setup ~impl ~sigma re
   |> measure_until
       ~limit:(Mtime.Span.of_uint64_ns (Int64.mul limit 1_000_000_000L))
       ~interval:stutter
@@ -135,7 +139,7 @@ let gen_cmd =
     Term.info "generate"
       ~doc:"Generate strings matching a given regular expression."
   in
-  let t = Term.(const print_all $ backend $ re_arg $ sigma $ bound) in
+  let t = Term.(const print_all $ backend $ sigma $ re_arg $ bound) in
   (t, info)
 
 let count_cmd =
@@ -143,7 +147,7 @@ let count_cmd =
     Term.info "count"
       ~doc:"Time language generation up to a certain number of strings."
   in
-  let t = Term.(const count $ backend $ re_arg $ sigma $ bound) in
+  let t = Term.(const count $ backend $ sigma $ re_arg $ bound) in
   (t, info)
 
 let profile_cmd = 
