@@ -53,7 +53,7 @@ module[@inline always] Make
       if i > j then ()
       else
         let s = Segment.append Sigma.sigma (CCVector.get v (i-1)) in
-        CCVector.push v s;
+        CCVector.push v @@ Segment.memoize s;
         complete_from_to (i+1) j
             
     let get i =
@@ -112,7 +112,7 @@ module[@inline always] Make
         CCVector.push vec segm ;
         everything, None, (n :: indices)
       | Cons (segm, s) ->
-        CCVector.push vec segm ;
+        CCVector.push vec @@ Segment.memoize segm ;
         s, None, (n :: indices)
   
   let concat_subterms_of_length ~n ~f validIndicesA vecA vecB =
