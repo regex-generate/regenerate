@@ -31,6 +31,8 @@ module[@inline always] Make
   (** Utilities *)
   
   let segmentEpsilon = Segment.return W.empty
+  let nothing () = Iter.Ret Nothing
+  let everything () = Iter.Ret Everything
 
   module IMap = struct
     include CCMap.Make(CCInt)
@@ -142,34 +144,38 @@ module[@inline always] Make
       |> List.rev_map combine_segments
       |> Segment.merge
     in
-    let rec collect n mapS seq validIndices () = match seq () with
-      | Iter.Ret Nothing -> assert false
+    let rec do_star n mapS seq validIndices = 
+      let segmS = subterms_of_length ~stop:n validIndices mapS in
+      let mapS = IMap.save n segmS mapS in
+      Iter.Cons (segmS, collect (n+1) mapS seq validIndices)
+    and collect n mapS seq validIndices () = match seq () with
+      | Iter.Ret Everything as v -> v
+      | Iter.Ret Nothing ->
+        do_star n mapS nothing validIndices
       | Cons (segm, seq) ->
         let validIndices =
-          if Segment.is_empty segm
-          then validIndices
-          else (n, segm) :: validIndices
+          if Segment.is_empty segm then validIndices else (n, segm) :: validIndices
         in
-        let segmS = subterms_of_length ~stop:n validIndices mapS in
-        let mapS = M.save n segmS mapS in
-        Iter.Cons (segmS, collect (n+1) mapS seq validIndices)
+        do_star n mapS seq validIndices
     in
     fun s () -> match s() with
-    | Iter.Ret Nothing -> assert false
-    | Cons (_, seq) ->
-      let mS = IMap.singleton 0 segmentEpsilon in
-      Iter.Cons (segmentEpsilon, collect 1 mS seq [])
+      | Iter.Ret Nothing -> Iter.Cons (segmentEpsilon, nothing)
+      | Iter.Ret Everything as v -> v
+      | Cons (_, seq) ->
+        let mS = IMap.singleton 0 segmentEpsilon in
+        Iter.Cons (segmentEpsilon, collect 1 mS seq [])
 
   let add_epsilon x () = match x () with
-    | Iter.Ret Nothing -> assert false
+    | Iter.Ret Nothing -> Iter.Cons (segmentEpsilon, nothing)
+    | Iter.Ret Everything as x -> x
     | Cons (_, t) -> Iter.Cons (segmentEpsilon, t)
   
   let rec rep i j re = match (i, j, re) with
     | 0, None, re -> star re
-    | 0, Some y, re ->
-      add_epsilon @@ concatenate re @@ rep 0 (Some (y - 1)) re
     | i, j, re ->
-      concatenate re @@ rep (i-1) (CCOpt.map (fun j -> j - 1) j) re
+      let dec i = max (i-1) 0 in
+      (if i = 0 then add_epsilon else fun x -> x) @@
+      concatenate re @@ rep (dec i) (CCOpt.map dec j) re
     
   
 
@@ -183,9 +189,6 @@ module[@inline always] Make
     | Cons (x, s) ->
       Segment.to_seq x k;
       flatten (n+1) s k 
-
-  let nothing () = Iter.Ret Nothing
-  let everything () = Iter.Ret Everything
   
   let gen ~sigma =
     let rec g (r : _ Regex.t) : lang = match r with
