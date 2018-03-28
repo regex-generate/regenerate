@@ -1,18 +1,23 @@
-module List (C : Set.OrderedType) = struct
+module type S = sig
+  type char
+  type t
+  val empty : t
+  val singleton : char -> t
+  val length : t -> int
+  val append : t -> t -> t
+  val cons : char -> t -> t
+  val pp : Format.formatter -> t -> unit
+end
+
+module List (C : sig include Set.OrderedType val pp : t Fmt.t end) = struct
+  type char = C.t
   type t = C.t list
   let empty = []
   let singleton x = [x]
   let length = List.length
   let append = List.append
   let cons = List.cons
-
-  (* Length lexicographic order *)
-  let compare l1 l2 =
-    if l1 == l2 then 0
-    else CCOrd.(
-        int (length l1) (length l2)
-        <?> (list C.compare, l1, l2))
-  let pp = CCFormat.(list ~sep:(fun _ () -> ()) char)
+  let pp = CCFormat.(list ~sep:(fun _ () -> ()) C.pp)
 end
 
 module String = struct
@@ -23,11 +28,6 @@ module String = struct
   let cons c s = singleton c ^ s
   let append = (^)
   let compare_char = Char.compare
-  let compare = CCString.compare
   let pp = Format.pp_print_string
   let to_seq s k = String.iter k s
-  let of_list l =
-    let buf = Buffer.create (CCList.length l) in
-    CCList.iter (fun c -> Buffer.add_char buf c) l;
-    Buffer.contents buf
 end

@@ -2,7 +2,7 @@ open Regenerate
 
 let () = Printexc.record_backtrace true
 
-let rec to_re = function
+let rec to_re = let open Regex in function
   | One -> Re.epsilon
   | Set l -> Re.set @@ CCString.of_list l
   | Seq (re, re') -> Re.seq [to_re re; to_re re']

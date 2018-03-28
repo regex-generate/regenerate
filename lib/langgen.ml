@@ -1,21 +1,10 @@
-module type WORD = sig
-  type char
-  type t
-  val empty : t
-  val singleton : char -> t
-  val length : t -> int
-  val append : t -> t -> t
-  val cons : char -> t -> t
-  val pp : Format.formatter -> t -> unit
-end
-
 module type SIGMA = sig
   type t
   val sigma : t
 end
 
 module[@inline always] Make
-    (Word : WORD)
+    (Word : Word.S)
     (Segment : Segments.S with type elt = Word.t)
     (Sigma : SIGMA with type t = Segment.t)
 = struct
@@ -305,7 +294,7 @@ let sample_infinite ?(st=Random.State.make_self_init ()) ~skip n seq (k : _ -> u
 
 let arbitrary
     (type t) (type char)
-    (module W : WORD with type char = char and type t = t)
+    (module W : Word.S with type char = char and type t = t)
     (module S : Segments.S with type elt = W.t)
     ~compl
     ~pp
