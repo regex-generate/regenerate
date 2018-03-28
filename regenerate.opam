@@ -4,9 +4,9 @@ synopsis: "Generate strings matching a given regular expression"
 maintainer: "Drup <drupyog@zoho.com>"
 authors: "Drup <drupyog@zoho.com>"
 license: "MIT"
-homepage: "https://github.com/Drup/re_testing"
-bug-reports: "https://github.com/Drup/re_testing/issues"
-dev-repo: "git+https://github.com/Drup/re_testing.git"
+homepage: "https://github.com/Drup/regenerate"
+bug-reports: "https://github.com/Drup/regenerate/issues"
+dev-repo: "git+https://github.com/Drup/regenerate.git"
 depends: [
   "jbuilder" {build}
   "ocaml"
