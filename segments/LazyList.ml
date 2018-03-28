@@ -11,7 +11,7 @@ module Make (K : Sigs.OrderedMonoid) = struct
   let is_empty = L.is_empty
   let return = L.return
 
-  let of_list = L.of_list                 
+  let of_list l = L.of_list @@ CCList.sort_uniq ~cmp:K.compare l              
   let iter f l =
     let rec aux l = match next l with
       | L.Cons (x, t) -> (f x; aux t)

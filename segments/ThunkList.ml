@@ -6,7 +6,7 @@ module Make (K : Sigs.OrderedMonoid) = struct
 
   let empty = empty
   let is_empty = is_empty
-  let of_list = of_list
+  let of_list l = of_list @@ CCList.sort_uniq ~cmp:K.compare l
   let return = return
   let to_seq x f = iter f x
   let pp = pp
