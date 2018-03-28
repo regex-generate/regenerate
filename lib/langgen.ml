@@ -196,14 +196,20 @@ module[@inline always] Make
     | Nothing -> Cons (segmentEpsilon, nothing)
     | Everything as x -> x
     | Cons (_, t) -> Cons (segmentEpsilon, t)
-  
-  let rec rep i j re = match (i, j, re) with
-    | 0, None, re -> star re
-    | i, j, re ->
-      let dec i = max (i-1) 0 in
-      (if i = 0 then add_epsilon else fun x -> x) @@
-      concatenate re @@ rep (dec i) (CCOpt.map dec j) re
-    
+
+  let rep = 
+    let rec rep_with_acc acc i j re = match (i, j, re) with
+      | 0, None, re -> concatenate acc (star re)
+      | i, j, re ->
+        let dec i = max (i-1) 0 in
+        let acc =
+          (if i = 0 then add_epsilon else fun x -> x) @@
+          concatenate acc re
+        in
+        rep_with_acc acc (dec i) (CCOpt.map dec j) re
+    in
+    rep_with_acc (segmentEpsilon @: nothing)
+
   (** Others *)
 
   let charset l = match l with
