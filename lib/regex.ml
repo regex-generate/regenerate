@@ -1,8 +1,8 @@
+type 'a cset = 'a list
 
 type 'a t
-  = Zero
-  | One
-  | Atom of 'a
+  = One
+  | Set of 'a cset
   | Seq of 'a t * 'a t
   | Or of 'a t * 'a t
   | And of 'a t * 'a t
@@ -12,10 +12,10 @@ type 'a t
 (** Smart constructors *)
 
 let epsilon = One
-let void = Zero
-let atom s = Atom s
+let void = Set []
+let atom c = Set [c]
 let char c = atom c
-(* let charset cs = Chars (CSet.of_list cs) *)
+let charset cs = Set cs
 let enumerate c1 c2 =
   if c1 > c2 then None
   else
@@ -43,9 +43,8 @@ let opt x = rep 0 (Some 1) x
 (** QCheck utilities *)
 
 let rec size = function
-  | Zero -> 1
   | One -> 1
-  | Atom _ -> 1
+  | Set _ -> 1
   | Rep (_,_,a)
   | Not a -> size a + 1
   | Or (a,b)
@@ -58,9 +57,8 @@ let prio = function
   | Or (_,_) -> 3
   | Not _ -> 4
   | Rep (_,_,_) -> 5
-  | Zero 
   | One
-  | Atom _ -> 6
+  | Set _ -> 6
 
 let rec pp ppalpha fmt x =
   let f fmt y =
@@ -69,9 +67,9 @@ let rec pp ppalpha fmt x =
     else pp ppalpha fmt y
   in
   match x with
-  | Zero -> Fmt.pf fmt "[]"
   | One -> Fmt.pf fmt ""
-  | Atom c -> ppalpha fmt c
+  | Set [x] -> Fmt.pf fmt "%a" ppalpha x
+  | Set l -> Fmt.pf fmt "[%a]" (Fmt.list ~sep:Fmt.nop ppalpha) l
   | Seq (a,b) -> Fmt.pf fmt "%a%a" f a f b
   | Or (a,b) -> Fmt.pf fmt "%a|%a" f a f b
   | And (a,b) -> Fmt.pf fmt "%a&%a" f a f b
@@ -83,9 +81,18 @@ let rec pp ppalpha fmt x =
 
 let gen alphabet =
   let open QCheck.Gen in
-  let gatom = alphabet >|= atom in
-  let gbase = frequency [ 1, pure void ; 1, pure epsilon ; 8, gatom ] in
   let opt a = frequency [ 1, pure None ; 1, map CCOpt.return a] in
+
+  let gatom = alphabet >|= atom in
+  let gset =
+    map (fun l -> charset @@ CCList.uniq ~eq:(=) l) @@ list alphabet
+  in
+  let gbase = frequency [
+      1, pure void ;
+      1, pure epsilon ;
+      8, gatom ;
+      5, gset ;
+    ] in
   let rec gen n st =
     if n <= 1 then gbase st else
       frequency [

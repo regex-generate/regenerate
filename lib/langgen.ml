@@ -204,7 +204,13 @@ module[@inline always] Make
       (if i = 0 then add_epsilon else fun x -> x) @@
       concatenate re @@ rep (dec i) (CCOpt.map dec j) re
     
-  
+  (** Others *)
+
+  let charset l = match l with
+    | [] -> nothing
+    | l ->
+      let segm1 = Segment.of_list @@ List.map Word.singleton l in
+      Segment.empty @: segm1 @: nothing
 
 
   (****)
@@ -220,9 +226,8 @@ module[@inline always] Make
   let flatten s = flatten_from 0 s
   
   let rec gen : Word.char Regex.t -> lang = function
-    | Zero -> nothing
+    | Set l -> charset l
     | One -> segmentEpsilon @: nothing
-    | Atom x -> Segment.empty @: (Segment.return @@ Word.singleton x) @: nothing
     | Seq (r1, r2) -> concatenate (gen r1) (gen r2)
     | Or (r1, r2) -> union (gen r1) (gen r2)
     | And (r1, r2) -> inter (gen r1) (gen r2)

@@ -61,8 +61,7 @@ let parse s =
       if accept '^' then
         Regex.compl (Regex.char '\n')
       else
-        raise Not_supported
-        (* Regex.charset (bracket []) *)
+        Regex.charset (bracket [])
     end else
     if accept '\\' then begin
       if eos () then raise Parse_error;
@@ -90,36 +89,36 @@ let parse s =
         integer' i'
       | _ ->
         unget (); Some i
-  (* and bracket s =
-   *   if s <> [] && accept ']' then s else begin
-   *     let c = char () in
-   *     if accept '-' then begin
-   *       if accept ']' then c :: '-' :: s else begin
-   *         let c' = char () in
-   *         match Regex.enumerate c c' with
-   *         | None -> raise Parse_error
-   *         | Some l -> bracket (l @ s)
-   *       end
-   *     end else
-   *       bracket (c :: s)
-   *   end
-   * and char () =
-   *   if eos () then raise Parse_error;
-   *   let c = get () in
-   *   if c = '[' then begin
-   *     if accept '=' then raise Not_supported
-   *     else if accept ':' then begin
-   *       raise Not_supported (\*XXX*\)
-   *     end else if accept '.' then begin
-   *       if eos () then raise Parse_error;
-   *       let c = get () in
-   *       if not (accept '.') then raise Not_supported;
-   *       if not (accept ']') then raise Parse_error;
-   *       c
-   *     end else
-   *       c
-   *   end else
-   *     c *)
+  and bracket s =
+    if s <> [] && accept ']' then s else begin
+      let c = char () in
+      if accept '-' then begin
+        if accept ']' then c :: '-' :: s else begin
+          let c' = char () in
+          match Regex.enumerate c c' with
+          | None -> raise Parse_error
+          | Some l -> bracket (l @ s)
+        end
+      end else
+        bracket (c :: s)
+    end
+  and char () =
+    if eos () then raise Parse_error;
+    let c = get () in
+    if c = '[' then begin
+      if accept '=' then raise Not_supported
+      else if accept ':' then begin
+        raise Not_supported (*XXX*)
+      end else if accept '.' then begin
+        if eos () then raise Parse_error;
+        let c = get () in
+        if not (accept '.') then raise Not_supported;
+        if not (accept ']') then raise Parse_error;
+        c
+      end else
+        c
+    end else
+      c
   in
   let res = regexp () in
   if not (eos ()) then raise Parse_error;
