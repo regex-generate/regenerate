@@ -6,6 +6,7 @@ module type WORD = sig
   val length : t -> int
   val append : t -> t -> t
   val cons : char -> t -> t
+  val pp : Format.formatter -> t -> unit
 end
 
 module type SIGMA = sig
@@ -242,9 +243,10 @@ module[@inline always] Make
   
   (** Utils *)
 
-  let pp_item pp_word =
-    Fmt.hbox @@ Fmt.iter ~sep:(Fmt.unit ", ") (CCFun.flip Segment.to_seq) pp_word
-  let pp ?(pp_sep=Format.pp_print_cut) pp_word fmt (l : lang) =
+  let pp_item =
+    Fmt.hbox @@ Fmt.iter ~sep:(Fmt.unit ", ") (CCFun.flip Segment.to_seq) Word.pp
+  let pp fmt (l : lang) =
+    let pp_sep = Fmt.unit "@." in
     let rec pp n fmt l = match l() with
       | Nothing -> ()
       | Everything ->
@@ -254,16 +256,16 @@ module[@inline always] Make
         pp_next n fmt x l'
     and pp_next n fmt x l' =
         pp_sep fmt ();
-        pp_item pp_word fmt x ;
+        pp_item fmt x ;
         pp (n+1) fmt l'
     in
     match l() with
     | Nothing -> ()
     | Everything ->
       let x = Sigma_star.get 0 and l' = everything in
-      pp_item pp_word fmt x; pp 1 fmt l'
+      pp_item fmt x; pp 1 fmt l'
     | Cons (x,l') ->
-      pp_item pp_word fmt x; pp 1 fmt l'
+      pp_item fmt x; pp 1 fmt l'
   
   let of_list l =
     let rec aux n l () = match l with
@@ -272,8 +274,5 @@ module[@inline always] Make
         let x, rest = CCList.partition (fun s -> Word.length s = n) l in
         Cons (Segment.of_list x, aux (n+1) rest)
     in aux 0 l
-
-  let print pp_word : lang -> unit =
-    pp ~pp_sep:(Fmt.unit "@.") pp_word Fmt.stdout
   
 end
