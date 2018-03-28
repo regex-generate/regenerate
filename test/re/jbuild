@@ -1,0 +1,10 @@
+(jbuild_version 1)
+
+(executable
+ ((name test_re)
+  (libraries (regenerate regenerate.segments re))))
+
+(alias
+ ((name    runtest)
+  (deps    (test_re.exe))
+  (action  (run ${<}))))

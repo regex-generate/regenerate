@@ -16,6 +16,7 @@ depends: [
   "mtime"
   "oseq"
   "sequence"
+  "re" {with-test}
 ]
 build: [
   ["jbuilder" "subst" "-n" name] {pinned}

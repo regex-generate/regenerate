@@ -2,7 +2,7 @@
 
 (library
  ((name segments)
-  (public_name regenerate.segment)
+  (public_name regenerate.segments)
   (libraries (fmt sequence containers.data containers.iter oseq containers))
   (ocamlopt_flags (:standard "-O3"))
 ))
