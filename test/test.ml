@@ -36,18 +36,24 @@ let langs = [|
 
 let id x = x
 
+let rec take n s () = match s() with
+  | L.Everything | L.Nothing as v -> v
+  | L.Cons (seg, s) ->
+    if n <= 0 then L.Nothing
+    else L.Cons (seg, take (n-1) s)
+
 let pp_seg = L.pp_item (Fmt.quote W.pp)
 let pp = L.pp (Fmt.quote W.pp)
 
 let print_all ?n (lang : L.lang) =
   lang
   (* |> L.flatten *)
-  |> (match n with Some n -> Iter.take n L.Nothing | None -> id)
+  |> (match n with Some n -> take n | None -> id)
   |> L.print W.pp
 
 let time_up_to_gen n lang =
   let i = lang
-          |> Iter.take n L.Nothing
+          |> take n
           |> L.flatten
           |> Sequence.length
   in
