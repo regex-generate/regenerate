@@ -67,7 +67,7 @@ let rec pp ppalpha fmt x =
     else pp ppalpha fmt y
   in
   match x with
-  | One -> Fmt.pf fmt ""
+  | One -> Fmt.pf fmt "ε" (* Technically wrong, but helpful. *)
   | Set [x] -> Fmt.pf fmt "%a" ppalpha x
   | Set l -> Fmt.pf fmt "[%a]" (Fmt.list ~sep:Fmt.nop ppalpha) l
   | Seq (a,b) -> Fmt.pf fmt "%a%a" f a f b

@@ -179,8 +179,11 @@ module[@inline always] Make
       | Nothing -> Cons (segmentEpsilon, nothing)
       | Everything as v -> v
       | Cons (_, seq) ->
-        let mS = IMap.singleton 0 segmentEpsilon in
-        Cons (segmentEpsilon, collect 1 mS seq [])
+        match seq() with
+        | Nothing -> Cons (segmentEpsilon, nothing)
+        | seq ->
+          let mS = IMap.singleton 0 segmentEpsilon in
+          Cons (segmentEpsilon, collect 1 mS (fun () -> seq) [])
 
   let add_epsilon x () = match x () with
     | Nothing -> Cons (segmentEpsilon, nothing)
