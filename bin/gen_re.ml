@@ -100,7 +100,7 @@ let sigma =
   let doc = Arg.info ~docv:"ALPHABET" ~doc:"Alphabet used by the regular expression"
       ["a";"sigma"]
   in
-  let default = OSeq.to_string @@ CCOpt.get_exn @@ enumerate ' ' '~' in
+  let default = CCString.of_list @@ CCOpt.get_exn @@ enumerate ' ' '~' in
   Arg.(value & opt string default & doc)
 
 let setup ~impl ~sigma re = 

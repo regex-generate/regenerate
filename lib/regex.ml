@@ -16,12 +16,11 @@ let atom s = Atom s
 let char c = atom c
 (* let charset cs = Chars (CSet.of_list cs) *)
 let enumerate c1 c2 =
-  let open OSeq in
   if c1 > c2 then None
   else
-    let rec aux i m () =
-      if i > m then Nil
-      else Cons (Char.chr i, aux (i+1) m)
+    let rec aux i m =
+      if i > m then []
+      else Char.chr i :: aux (i+1) m
     in
     Some (aux (Char.code c1) (Char.code c2))
 
@@ -39,3 +38,4 @@ let rep i j x = Rep (i, j, x)
 let star x = rep 0 None x
 let plus x = rep 1 None x
 let opt x = rep 0 (Some 1) x
+
