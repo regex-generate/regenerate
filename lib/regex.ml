@@ -9,6 +9,7 @@ type 'a t
   | Not of 'a t
   | Rep of int * int option * 'a t
 
+(** Smart constructors *)
 
 let epsilon = One
 let void = Zero
@@ -29,7 +30,7 @@ let rec reduce init f = function
   | [x] -> x
   | x :: l -> f x (reduce init f l)
                     
-let concat l = reduce One (fun x y -> Seq (x,y)) l
+let seq l = reduce One (fun x y -> Seq (x,y)) l
 let alt x y = Or (x,y)
 let inter x y = And (x,y)
 let compl x = Not x
@@ -39,3 +40,76 @@ let star x = rep 0 None x
 let plus x = rep 1 None x
 let opt x = rep 0 (Some 1) x
 
+(** QCheck utilities *)
+
+let rec size = function
+  | Zero -> 1
+  | One -> 1
+  | Atom _ -> 1
+  | Rep (_,_,a)
+  | Not a -> size a + 1
+  | Or (a,b)
+  | And (a,b)
+  | Seq (a,b) -> size a + size b + 1
+
+let prio = function
+  | Seq (_,_) -> 1
+  | And (_,_) -> 2
+  | Or (_,_) -> 3
+  | Not _ -> 4
+  | Rep (_,_,_) -> 5
+  | Zero 
+  | One
+  | Atom _ -> 6
+
+let rec pp ppalpha fmt x =
+  let f fmt y =
+    if prio y < prio x
+    then Fmt.parens (pp ppalpha) fmt y
+    else pp ppalpha fmt y
+  in
+  match x with
+  | Zero -> Fmt.pf fmt "[]"
+  | One -> Fmt.pf fmt ""
+  | Atom c -> ppalpha fmt c
+  | Seq (a,b) -> Fmt.pf fmt "%a%a" f a f b
+  | Or (a,b) -> Fmt.pf fmt "%a|%a" f a f b
+  | And (a,b) -> Fmt.pf fmt "%a&%a" f a f b
+  | Not a -> Fmt.pf fmt "~%a" f a
+  | Rep (0,None,a) -> Fmt.pf fmt "%a*" f a
+  | Rep (1,None,a) -> Fmt.pf fmt "%a+" f a
+  | Rep (i,None,a) -> Fmt.pf fmt "%a{%i,}" f a i
+  | Rep (i,Some j,a) -> Fmt.pf fmt "%a{%i,%i}" f a i j
+
+let gen alphabet =
+  let open QCheck.Gen in
+  let gatom = alphabet >|= atom in
+  let gbase = frequency [ 1, pure void ; 1, pure epsilon ; 8, gatom ] in
+  let opt a = frequency [ 1, pure None ; 1, map CCOpt.return a] in
+  let rec gen n st =
+    if n <= 1 then gbase st else
+      frequency [
+        1, gbase ;
+        3, gcompl n ;
+        3, gbin n alt ;
+        3, gbin n inter ;
+        5, gbin n (fun x y -> Seq (x,y)) ;
+        3, grep n ;
+      ] st
+  and grep n =
+    int_bound 10 >>= fun i ->
+    opt (int_bound 10) >>= fun j ->
+    gen (n-1) >|= fun a ->
+    rep i (CCOpt.map ((+) i) j) a
+  and gcompl n = gen (n-1) >|= compl
+  and gbin n f =
+    gen ((n-1)/2) >>= fun a ->
+    gen ((n-1)/2) >|= fun b ->
+    f a b
+  in
+  sized_size (int_range 3 8) gen
+
+let arbitrary =
+  let print = Fmt.to_to_string @@ pp Fmt.char in
+  let gen = gen @@ QCheck.Gen.oneofl [ 'a'; 'b'; 'c' ] in
+  QCheck.make ~print ~small:size gen

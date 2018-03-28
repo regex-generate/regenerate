@@ -19,7 +19,7 @@ let parse s =
     else left
   and branch () = branch' []
   and branch' left =
-    if eos () || test '|' || test '&' || test ')' then Regex.concat (List.rev left)
+    if eos () || test '|' || test '&' || test ')' then Regex.seq (List.rev left)
     else branch' (piece () :: left)
   and piece () =
     let not_op =

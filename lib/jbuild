@@ -3,6 +3,6 @@
 (library
  ((name regenerate)
   (public_name regenerate)
-  (libraries (segments fmt sequence containers))
+  (libraries (segments fmt sequence qcheck containers))
   (ocamlopt_flags (:standard "-O3" "-inlining-report"))
 ))
