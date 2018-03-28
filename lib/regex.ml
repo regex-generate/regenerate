@@ -79,10 +79,11 @@ let rec pp ppalpha fmt x =
   | Rep (i,None,a) -> Fmt.pf fmt "%a{%i,}" f a i
   | Rep (i,Some j,a) -> Fmt.pf fmt "%a{%i,%i}" f a i j
 
-let gen alphabet =
+let gen ~compl:with_compl alphabet =
   let open QCheck.Gen in
   let opt a = frequency [ 1, pure None ; 1, map CCOpt.return a] in
 
+  let proba_compl = if with_compl then 3 else 0 in
   let gatom = alphabet >|= atom in
   let gset =
     map (fun l -> charset @@ CCList.uniq ~eq:(=) l) @@ list alphabet
@@ -97,7 +98,7 @@ let gen alphabet =
     if n <= 1 then gbase st else
       frequency [
         1, gbase ;
-        3, gcompl n ;
+        proba_compl, gcompl n ;
         3, gbin n alt ;
         3, gbin n inter ;
         5, gbin n (fun x y -> Seq (x,y)) ;
@@ -114,9 +115,4 @@ let gen alphabet =
     gen ((n-1)/2) >|= fun b ->
     f a b
   in
-  sized_size (int_range 3 8) gen
-
-let arbitrary =
-  let print = Fmt.to_to_string @@ pp Fmt.char in
-  let gen = gen @@ QCheck.Gen.oneofl [ 'a'; 'b'; 'c' ] in
-  QCheck.make ~print ~small:size gen
+  sized_size (int_range 2 5) gen

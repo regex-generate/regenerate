@@ -276,3 +276,62 @@ module[@inline always] Make
     in aux 0 l
   
 end
+
+(** [sample_infinite ~skip n seq] returns a sequence of on average [n] elements.
+    [seq] is only consumed when needed. 
+
+    This is done by skipping elements in [seq] (following a power law of average
+    [skip]). *)
+exception ExitSample
+let sample_infinite ?(st=Random.State.make_self_init ()) ~skip n seq (k : _ -> unit) = 
+  let i = ref (-1) in
+  let draw st =
+    let u = Random.State.float st 1. in
+    1 + int_of_float (-. (float skip) *. log1p (-. u))
+  in
+  let continue st = Random.State.float st 1. > (1. /. float n) in
+  let next = ref (draw st) in
+  let f x =
+    incr i ;
+    if i < next then ()
+    else begin
+      k x ;
+      if not (continue st) then raise ExitSample
+      else
+        next := !next + draw st
+    end
+  in
+  try seq f with ExitSample -> ()
+
+let arbitrary
+    (type t) (type char)
+    (module W : WORD with type char = char and type t = t)
+    (module S : Segments.S with type elt = W.t)
+    ~compl
+    ~pp
+    ~samples
+    (alphabet : W.char list) =
+  let sigma = S.of_list @@ List.map W.singleton alphabet in
+  let module Sigma = struct type t = S.t let sigma = sigma end in
+  let module L = Make (W) (S) (Sigma) in
+  let gen st =
+    let open QCheck.Gen in
+    let f re =
+      L.gen re |> L.flatten
+      |> sample_infinite ~st ~skip:5 samples
+      |> Sequence.to_list
+    in
+    let re = Regex.gen ~compl (oneofl alphabet) st in
+    let pos_examples = f re in
+    let neg_examples = f (Regex.compl re) in
+    (re, pos_examples, neg_examples)
+  in
+  let pp fmt (x, l , l') =
+    Fmt.pf fmt "@[<2>re =@ %a@]@.@[<v2>pos =@ %a@]@.@[<v2>neg =@ %a@]"
+      (Regex.pp pp) x   Fmt.(list W.pp) l   Fmt.(list W.pp) l'
+  in
+  let print = Fmt.to_to_string pp in
+  let small (x, _, _) = Regex.size x in
+  let shrink = QCheck.Shrink.(triple nil list list) in
+  QCheck.make ~print ~small ~shrink gen
+
