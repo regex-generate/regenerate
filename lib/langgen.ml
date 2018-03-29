@@ -233,6 +233,7 @@ module[@inline always] Make
       rep_with_acc acc (dec i) (CCOpt.map dec j) lang
   let rep i j lang = match i,j with
     | 0, None -> star lang
+    | 0, Some 0 -> langEpsilon
     | i, j ->
       let acc = add_epsilonX i lang in
       rep_with_acc acc (dec i) (CCOpt.map dec j) lang
