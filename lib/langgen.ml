@@ -120,6 +120,7 @@ module[@inline always] Make
       Cons (Segment.diff x1 x2, difference_aux (i+1) next1 next2)
 
   let difference = difference_aux 0
+  let compl = difference everything
   
   (** Concatenation *)
     
@@ -255,7 +256,7 @@ module[@inline always] Make
     | Seq (r1, r2) -> concatenate (gen r1) (gen r2)
     | Or (r1, r2) -> union (gen r1) (gen r2)
     | And (r1, r2) -> inter (gen r1) (gen r2)
-    | Not r -> difference everything (gen r)
+    | Not r -> compl (gen r)
     | Rep (i, j, r) -> rep i j (gen r)
   
   (** Exporting *)
@@ -353,15 +354,16 @@ let arbitrary
   let module L = Make (W) (S) (Sigma) in
   let gen st =
     let open QCheck.Gen in
-    let f re =
-      L.gen re
+    let re = Regex.gen ~compl (oneofl alphabet) st in
+    Fmt.epr "Re : %a@." (Regex.pp pp) re;
+    let lang = L.gen re in
+    let f l =
+      l
       |> L.sample ~st ~skip ~n:samples
       |> Sequence.to_list
     in
-    let re = Regex.gen ~compl (oneofl alphabet) st in
-    Fmt.epr "Re : %a@." (Regex.pp pp) re;
-    let pos_examples = f re in
-    let neg_examples = f (Regex.compl re) in
+    let pos_examples = f lang in
+    let neg_examples = f @@ L.compl lang in
     (re, pos_examples, neg_examples)
   in
   let pp fmt (x, l , l') =
