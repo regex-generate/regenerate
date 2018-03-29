@@ -24,6 +24,11 @@ let get_impl_mod : segment_impl -> (module S) = let open Segments in function
   | StrictSet -> (module StrictSet)
   | Trie -> (module Trie.Make)
 
+type conf =
+  | All
+  | Sample of { skip : int ; length : int option }
+  | Take of int
+
 let[@inline] make_impl ~impl =
   let module M = (val get_impl_mod impl) in
   let module S = M(W) in
@@ -32,7 +37,12 @@ let[@inline] make_impl ~impl =
     let sigma = S.of_list @@ List.map W.singleton @@ CCString.to_list sigma in
     let module Sigma = struct type t = S.t let sigma = sigma end in
     let module A = A (Sigma) in
-    fun re -> A.flatten @@ A.gen re
+    fun conf re ->
+      let lang = A.gen re in
+      match conf with
+      | All -> A.flatten lang
+      | Sample { skip ; length } -> A.sample ~skip ?n:length lang
+      | Take n -> Sequence.take n @@ A.flatten lang
 
 let tl = make_impl ~impl:ThunkList ~sigma:"ab"
 let tlm = make_impl ~impl:ThunkListMemo ~sigma:"ab"
@@ -84,11 +94,20 @@ let bound =
   in
   Arg.(value & opt (some int) None & doc)
 
-let stutter =
-  let doc = Arg.info ~docv:"STUTTER" ~doc:"Interval for stuttering."
-      ["s";"stutter"]
+let shutter =
+  let doc = Arg.info ~docv:"SKIP"
+      ~doc:"Interval for stuttering."
+      ["s";"shutter"]
   in
   Arg.(value & opt int 20 & doc)
+
+let skip =
+  let doc = Arg.info ~docv:"SAMPLE"
+      ~doc:"Average sampling interval."
+      ["s";"sample"]
+  in
+  Arg.(value & opt (some int) None & doc)
+
 
 let time_limit = 
   let doc = Arg.info ~docv:"LIMIT" ~doc:"Time limit for stuttering in seconds."
@@ -107,17 +126,20 @@ let setup ~impl ~sigma re =
   Fmt_tty.setup_std_outputs ();
   get_impl ~impl ~sigma re
 
-let print_all impl sigma re n =
-  setup ~impl ~sigma re
-  |> CCOpt.map_or ~default:(fun x -> x) Sequence.take n
+let print_all impl sigma re length skip =
+  let conf = match length, skip with
+    | Some n, None -> Take n
+    | None, None -> All
+    | _, Some skip -> Sample { skip ; length }
+  in 
+  setup ~impl ~sigma conf re
   |> Fmt.pr "%a@." (CCFormat.seq ~sep:(Fmt.unit "@.") W.pp)
 
 let count impl sigma re n =
   let n = CCOpt.get_or ~default:1000 n in
   let c = Mtime_clock.counter () in
   let i =
-    setup ~impl ~sigma re
-    |> Sequence.take n
+    setup ~impl ~sigma (Take n) re
     |> Sequence.length
   in
   Fmt.pr "Max count: %i@.Actual Count: %i@.Time: %a@." n i
@@ -145,7 +167,7 @@ let measure_until ~limit ~interval oc lang =
 
 let running_profile impl re sigma stutter limit =
   let oc = stdout in
-  setup ~impl ~sigma re
+  setup ~impl ~sigma All re
   |> measure_until
       ~limit:(Mtime.Span.of_uint64_ns (Int64.mul limit 1_000_000_000L))
       ~interval:stutter
@@ -154,11 +176,11 @@ let running_profile impl re sigma stutter limit =
 let gen_cmd =
   let info =
     Term.info "generate"
-      ~doc:"Generate strings matching a given regular expression."
+      ~doc:"Generate all strings matching a given regular expression."
   in
-  let t = Term.(const print_all $ backend $ sigma $ re_arg $ bound) in
+  let t = Term.(const print_all $ backend $ sigma $ re_arg $ bound $ skip) in
   (t, info)
-
+  
 let count_cmd =
   let info =
     Term.info "count"
@@ -172,7 +194,7 @@ let profile_cmd =
     Term.info "profile"
       ~doc:"Profile language generation for the given regular expression."
   in
-  let t = Term.(const running_profile $ backend $ re_arg $ sigma $ stutter $ time_limit) in
+  let t = Term.(const running_profile $ backend $ re_arg $ sigma $ shutter $ time_limit) in
   (t, info)
 
 let cmds = [ profile_cmd ; count_cmd ; gen_cmd ]

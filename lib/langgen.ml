@@ -248,16 +248,6 @@ module[@inline always] Make
 
   (****)
 
-  let rec flatten_from n s k = match s () with
-    | Nothing -> ()
-    | Everything ->
-      Sigma_star.iter n (fun s -> Segment.to_seq s k)
-    | Cons (x, s) ->
-      Segment.to_seq x k;
-      flatten_from (n+1) s k
-
-  let flatten s = flatten_from 0 s
-  
   let rec gen : Word.char Regex.t -> lang = function
     | Set l -> charset l
     | One -> langEpsilon
@@ -267,33 +257,86 @@ module[@inline always] Make
     | Not r -> difference everything (gen r)
     | Rep (i, j, r) -> rep i j (gen r)
   
+  (** Exporting *)
+
+  let rec flatten_from n s k = match s () with
+    | Nothing -> ()
+    | Everything ->
+      Sigma_star.iter n (fun s -> Segment.to_seq s k)
+    | Cons (x, s) ->
+      Segment.to_seq x k;
+      flatten_from (n+1) s k
+
+  let flatten s = flatten_from 0 s
+
+
+  (** [sample_infinite ~skip n lang] returns a sequence of on average [n] elements.
+      [lang] is only consumed when needed. 
+
+      We sample one element every [k], where [k] follows a power law of
+      average [skip]. Furthermore, if we consume more than [log k] empty segments,
+      we assume that the rest of the segments will be infinitely empty and
+      stop. *)
+  exception ExitSample
+  let sample ?(st=Random.State.make_self_init ()) ?n ~skip lang (k : _ -> unit) = 
+    let i = ref (-1) in
+
+    (* Draw the amount of element we skip and store the next element to take. *)
+    let draw_skip st =
+      let u = Random.State.float st 1. in
+      1 + int_of_float (-. (float skip) *. log1p (-. u))
+    in
+    let next = ref (draw_skip st) in
+
+    (* Our chance to continue after each sample. *)
+    let continue st =
+      match n with
+      | Some n -> Random.State.float st 1. > (1. /. float n)
+      | None -> true
+    in
+
+    (* Our "empty segment" budget. If we exceed this, we stop. *)
+    let budget_of_skip n = int_of_float @@ log @@ float n in    
+    let budget = ref (budget_of_skip !next) in
+    
+    let onSegm x =
+      incr i ;
+      if i < next then ()
+      else begin
+        k x ;
+        if not (continue st) then raise ExitSample
+        else begin
+          let newskip = draw_skip st in
+          next := !next + newskip ;
+          budget := budget_of_skip newskip ;
+        end
+      end
+    in
+    let rec walk_lang n seq =
+      let i0 = !i in
+      let next segm seq =
+        match Segment.to_seq segm onSegm with
+        | exception ExitSample -> ()
+        | () ->
+          let i1 = !i in
+          if i0 <> i1 then walk_lang (n+1) seq
+          else if !budget <= 0 then ()
+          else begin
+            decr budget ;
+            walk_lang (n+1) seq
+          end
+      in
+      match seq () with
+      | Nothing -> ()
+      | Everything ->
+        let segm = Sigma_star.get n in
+        next segm everything
+      | Cons (segm, seq) ->
+        next segm seq
+    in
+    walk_lang 0 lang
+
 end
-
-(** [sample_infinite ~skip n seq] returns a sequence of on average [n] elements.
-    [seq] is only consumed when needed. 
-
-    This is done by skipping elements in [seq] (following a power law of average
-    [skip]). *)
-exception ExitSample
-let sample_infinite ?(st=Random.State.make_self_init ()) ~skip n seq (k : _ -> unit) = 
-  let i = ref (-1) in
-  let draw st =
-    let u = Random.State.float st 1. in
-    1 + int_of_float (-. (float skip) *. log1p (-. u))
-  in
-  let continue st = Random.State.float st 1. > (1. /. float n) in
-  let next = ref (draw st) in
-  let f x =
-    incr i ;
-    if i < next then ()
-    else begin
-      k x ;
-      if not (continue st) then raise ExitSample
-      else
-        next := !next + draw st
-    end
-  in
-  try seq f with ExitSample -> ()
 
 let arbitrary
     (type t) (type char)
@@ -309,8 +352,8 @@ let arbitrary
   let gen st =
     let open QCheck.Gen in
     let f re =
-      L.gen re |> L.flatten
-      |> sample_infinite ~st ~skip:5 samples
+      L.gen re
+      |> L.sample ~st ~skip:5 ~n:samples
       |> Sequence.to_list
     in
     let re = Regex.gen ~compl (oneofl alphabet) st in
