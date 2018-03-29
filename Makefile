@@ -26,7 +26,7 @@ $(DOCDIR)/.git:
 	)
 
 gh-pages-index: $(DOCDIR)/.git web
-	cp web/*.html web/*.js web/*.css "$(DOCDIR)/"
+	cp -r web/*.html web/*.js web/*.css web/static "$(DOCDIR)/"
 
 gh-pages: $(DOCDIR)/.git gh-pages-index
 	git -C $(DOCDIR) add --all 
