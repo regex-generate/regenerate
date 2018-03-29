@@ -1,0 +1,108 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Regenerate : Generate languages from regular expressions</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.4.3/css/foundation.min.css" crossorigin="anonymous" />
+
+  </head>
+  <body>
+<div class="grid-container">
+<div class="grid-x  grid-margin-x">
+
+  <div class="cell auto"></div>
+  <div class="cell small-8">
+  <h1 class="text-center">Regenerate</h1>
+
+  <p class="lead">
+    Regenerate is a tool to generate test-cases for regular expression engines.
+    Try it!
+  </p>
+  <p class="text-justify">    
+    Regenerate can generate both positive and negative examples.
+    It handles most posix extended regular expressions along with
+    complement (<code>~a</code>) and intersection (<code>a&b</code>). See
+    the <a data-open="explanationRe">help</a> for details.<br/>
+    Regenerate was made with <a href="https://ocaml.org/">OCaml</a> and a lot of cool
+    OCaml libraries. The native tool and the library are available on
+    <a href="https://opam.ocaml.org/packages/regenerate/">opam</a>.
+    This page was made with the awesome
+    <a href="http://ocsigen.org/js_of_ocaml/">js_of_ocaml</a> compiler.
+    The source code is available <a href="https://github.com/Drup/Regenerate">on github</a>.
+  </p>
+  
+  <div class="input-group">
+    <input class="input-group-field" id="re-input"
+           placeholder="Regular expression"  type="text">
+    <a class="input-group-label"  data-open="explanationRe">?</a>
+    <div class="input-group-button">
+      <input type="submit" class="button" id="gen-button" value="Generate!">
+    </div>
+  </div>
+
+  <div class="small reveal" id="explanationRe" data-reveal>
+    <h1>Which regular expressions?</h1>
+    <p class="lead">You can use most posix extended regular expressions plus complement and intersection.
+      More precisely:</p>
+    <ul>
+      <li><code>a</code>: A single char.</li>
+      <li><code>[ab]</code>: Character sets.
+        <ul>
+          <li><code>[^ab]</code>: Complement Character sets.</li>
+          <li><code>[a-c]</code>: Character ranges.</li>
+        </ul>
+      </li>
+      <li><code>ab</code>: Sequence.</li>
+      <li><code>a|b</code>: Alternative.</li>
+      <li><code>a&b</code>: Intersection.</li>
+      <li><code>~a</code>: Complement.</li>
+      <li><code>a{i,j}</code>: Repetition.
+        <ul>
+          <li><code>a*</code> is <code>a{0,}</code></li>
+          <li><code>a+</code> is <code>a{1,}</code></li>
+          <li><code>a?</code> is <code>a{0,1}</code></li>
+        </ul>
+      </li>
+    </ul>
+
+    <p>Back references, character classes, anchoring and lookahead/lookbehind are not
+      supported.</p>
+  
+    <button class="close-button" data-close aria-label="Close modal" type="button">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  </div>
+  <div class="cell auto"></div>
+</div>
+<div class="grid-x grid-margin-x is-hidden" id="instances">
+  
+  <div class="cell small-6">
+    <h2 class="subheader text-center">Positive instances</h2>
+    <ul class="no-bullet" id="pos-instances"></ul>
+  </div>
+  <div class="cell small-6">
+    <h2 class="subheader text-center">Negative instances</h2>
+    <ul class="no-bullet" id="neg-instances"></ul>
+</div></div>
+
+  <a href="https://github.com/Drup/Regenerate"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"></a>
+
+  
+  <script
+		src="https://code.jquery.com/jquery-3.3.1.min.js"
+		integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+		crossorigin="anonymous"></script>
+  <script
+		src="regenerate_web.bc.js" ></script>
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.4.3/js/foundation.min.js"
+    crossorigin="anonymous"></script>
+  <script>
+    $(document).foundation();
+  </script>
+</div>
+</body>
+</html>
