@@ -52,9 +52,9 @@ let rec size = function
   | Seq (a,b) -> size a + size b + 1
 
 let prio = function
-  | Seq (_,_) -> 1
-  | And (_,_) -> 2
-  | Or (_,_) -> 3
+  | And (_,_) -> 1
+  | Or (_,_) -> 2
+  | Seq (_,_) -> 3
   | Not _ -> 4
   | Rep (_,_,_) -> 5
   | One
