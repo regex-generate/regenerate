@@ -270,11 +270,11 @@ module[@inline always] Make
   let flatten s = flatten_from 0 s
 
 
-  (** [sample_infinite ~skip n lang] returns a sequence of on average [n] elements.
+  (** [sample ~skip n lang] returns a sequence of on average [n] elements.
       [lang] is only consumed when needed. 
 
       We sample one element every [k], where [k] follows a power law of
-      average [skip]. Furthermore, if we consume more than [log k] empty segments,
+      average [skip]. Furthermore, if we consume more than [sqrt k] empty segments,
       we assume that the rest of the segments will be infinitely empty and
       stop. *)
   exception ExitSample
@@ -296,7 +296,7 @@ module[@inline always] Make
     in
 
     (* Our "empty segment" budget. If we exceed this, we stop. *)
-    let budget_of_skip n = int_of_float @@ log @@ float n in    
+    let budget_of_skip n = 1 + (int_of_float @@ sqrt @@ float n) in    
     let budget = ref (budget_of_skip !next) in
     
     let onSegm x =
@@ -342,6 +342,7 @@ let arbitrary
     (type t) (type char)
     (module W : Word.S with type char = char and type t = t)
     (module S : Segments.S with type elt = W.t)
+    ?(skip=8)
     ~compl
     ~pp
     ~samples
@@ -353,7 +354,7 @@ let arbitrary
     let open QCheck.Gen in
     let f re =
       L.gen re
-      |> L.sample ~st ~skip:5 ~n:samples
+      |> L.sample ~st ~skip ~n:samples
       |> Sequence.to_list
     in
     let re = Regex.gen ~compl (oneofl alphabet) st in

@@ -107,8 +107,8 @@ let gen ~compl:with_compl alphabet =
         3, grep n ;
       ] st
   and grep n =
-    int_bound 10 >>= fun i ->
-    opt (int_bound 10) >>= fun j ->
+    int_bound 3 >>= fun i ->
+    opt (int_bound 5) >>= fun j ->
     gen (n-1) >|= fun a ->
     rep i (CCOpt.map ((+) i) j) a
   and gcompl n = gen (n-1) >|= compl
@@ -117,4 +117,4 @@ let gen ~compl:with_compl alphabet =
     gen ((n-1)/2) >|= fun b ->
     f a b
   in
-  sized_size (int_range 2 5) gen
+  sized_size (int_range 2 8) gen

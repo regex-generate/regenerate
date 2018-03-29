@@ -27,7 +27,7 @@ let test =
   let a =
     arbitrary
       (module W) (module S)
-      ~compl:false ~pp:Fmt.char ~samples:10
+      ~compl:false ~pp:Fmt.char ~samples:100
       sigma
   in
   QCheck.Test.make a f
