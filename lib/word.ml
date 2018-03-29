@@ -28,6 +28,10 @@ module String = struct
   let cons c s = singleton c ^ s
   let append = (^)
   let compare_char = Char.compare
-  let pp = Format.pp_print_string
+  let pp fmt s =
+    if s = "" then
+      Format.pp_print_string fmt "ε"
+    else
+      Format.pp_print_string fmt s
   let to_seq s k = String.iter k s
 end
