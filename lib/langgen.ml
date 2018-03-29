@@ -221,19 +221,21 @@ module[@inline always] Make
           Cons (segmentEpsilon, collect 1 mS (fun () -> seq) [])
 
   let add_epsilon x = union x langEpsilon
-
-  let rep = 
-    let rec rep_with_acc acc i j re = match (i, j, re) with
-      | 0, None, re -> concatenate acc (star re)
-      | i, j, re ->
-        let dec i = max (i-1) 0 in
-        let acc =
-          (if i = 0 then add_epsilon else fun x -> x) @@
-          concatenate acc re
-        in
-        rep_with_acc acc (dec i) (CCOpt.map dec j) re
-    in
-    rep_with_acc (segmentEpsilon @: nothing)
+  let dec k = max (k-1) 0
+  let rec rep_with_acc acc i j lang =
+    match i, j with
+    | 0, None -> concatenate acc (star lang)
+    | 0, Some 0 -> acc 
+    | i, j ->
+      let acc =
+        concatenate (if i = 0 then add_epsilon lang else lang) acc
+      in
+      rep_with_acc acc (dec i) (CCOpt.map dec j) lang
+  let rep i j lang = match i,j with
+    | 0, None -> star lang
+    | i, j ->
+      let acc = lang in
+      rep_with_acc acc (dec i) (CCOpt.map dec j) lang
 
   (** Others *)
 
