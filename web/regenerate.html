@@ -4,8 +4,10 @@
     <meta charset="utf-8" />
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="shortcut icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/OOjs_UI_icon_regular-expression.svg/24px-OOjs_UI_icon_regular-expression.svg.png"/>
     <title>Regenerate : Generate languages from regular expressions</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.4.3/css/foundation.min.css" crossorigin="anonymous" />
+    <link rel="stylesheet" href="regenerate.css" />
 
   </head>
   <body>
@@ -18,29 +20,43 @@
 
   <p class="lead">
     Regenerate is a tool to generate test-cases for regular expression engines.
-    Try it!
   </p>
   <p class="text-justify">    
-    Regenerate can generate both positive and negative examples.
+    Regenerate takes a <a href="https://en.wikipedia.org/wiki/Regular_expression"><em>regular</em> expression</a> and generates strings that match it.
     It handles most posix extended regular expressions along with
     complement (<code>~a</code>) and intersection (<code>a&b</code>). See
-    the <a data-open="explanationRe">help</a> for details.<br/>
-    Regenerate was made with <a href="https://ocaml.org/">OCaml</a> and a lot of cool
+    the <a data-open="explanationRe">help</a> for details.
+    Since it handles complement, it can also generate strings that
+    <em>don't</em> match a given regular expression.
+    Below, we generate both positive and negative examples for the
+    language composed of the letter 'a' and 'b'.    
+  </p>
+  <p>
+    Regenerate is made with <a href="https://ocaml.org/">OCaml</a> and a lot's
+    of cool
     OCaml libraries. The native tool and the library are available on
     <a href="https://opam.ocaml.org/packages/regenerate/">opam</a>.
     This page was made with the awesome
     <a href="http://ocsigen.org/js_of_ocaml/">js_of_ocaml</a> compiler.
     The source code is available <a href="https://github.com/Drup/Regenerate">on github</a>.
   </p>
-  
-  <div class="input-group">
-    <input class="input-group-field" id="re-input"
-           placeholder="Regular expression"  type="text">
-    <a class="input-group-label"  data-open="explanationRe">?</a>
-    <div class="input-group-button">
-      <input type="submit" class="button" id="gen-button" value="Generate!">
+
+  <form id="re-form">
+    <div class="input-group grid-x">
+      <input class="input-group-field cell auto" id="re-input"
+             placeholder="Regular expression"
+             value="(b(ab*a)*b|a)*"
+             type="text"/>
+      <select class="input-group-field cell shrink" id="re-select">
+        <option selected="selected" value="sample">Select some samples</option>
+        <option value="all">Give me everything</option>
+      </select>
+      <a class="input-group-label" data-open="explanationRe">?</a>
+      <div class="input-group-button">
+        <input type="submit" class="button" value="Generate!">
+      </div>
     </div>
-  </div>
+  </form>
 
   <div class="small reveal" id="explanationRe" data-reveal>
     <h1>Which regular expressions?</h1>
@@ -77,16 +93,16 @@
   </div>
   <div class="cell auto"></div>
 </div>
-<div class="grid-x grid-margin-x is-hidden" id="instances">
-  
-  <div class="cell small-6">
-    <h2 class="subheader text-center">Positive instances</h2>
+<div class="grid-x grid-margin-x is-hidden instances" id="instances">
+  <div class="cell small-6 positive">
+    <h2 class="subheader">Positive instances</h2>
     <ul class="no-bullet" id="pos-instances"></ul>
   </div>
-  <div class="cell small-6">
-    <h2 class="subheader text-center">Negative instances</h2>
+  <div class="cell small-6 negative">
+    <h2 class="subheader">Negative instances</h2>
     <ul class="no-bullet" id="neg-instances"></ul>
-</div></div>
+  </div>
+</div>
 
   <a href="https://github.com/Drup/Regenerate"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"></a>
 
