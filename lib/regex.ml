@@ -86,7 +86,9 @@ let gen ~compl:with_compl alphabet =
   let proba_compl = if with_compl then 3 else 0 in
   let gatom = alphabet >|= atom in
   let gset =
-    map (fun l -> charset @@ CCList.uniq ~eq:(=) l) @@ list alphabet
+    map
+      (fun l -> charset @@ CCList.uniq ~eq:(=) l)
+      (list_size (1 -- 10) alphabet)
   in
   let gbase = frequency [
       1, pure void ;
