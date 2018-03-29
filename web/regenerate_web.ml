@@ -27,6 +27,7 @@ let instances = Dom_html.getElementById "instances"
 let pos_instances = Dom_html.getElementById "pos-instances"
 let neg_instances = Dom_html.getElementById "neg-instances"
 let re_form = Dom_html.getElementById "re-form"
+let fail_div = Dom_html.getElementById "fail"
 
 let re_input =
   CCOpt.get_exn @@
@@ -46,6 +47,7 @@ let clear () =
   instances##.classList##remove (Js.string "is-hidden") ;
   pos_instances##.innerHTML := Js.string "" ;
   neg_instances##.innerHTML := Js.string "" ;
+  fail_div##.innerHTML := Js.string "" ;
   ()
 
 (** Push a new instance. *)
@@ -56,13 +58,22 @@ let push b s =
   let _ = Dom.appendChild parent item in
   ()
 
+(** On failure. *)
+let fail s =
+  let html =
+    Fmt.strf {|<div class="callout small alert">%s</div>|} s
+  in
+  fail_div##.innerHTML := Js.string html ;
+  false  
+
 let handler _ _ =
   let s = re_input##.value in
   let mode = get_mode () in
+  clear ();
   match parse @@ Js.to_string s with
-  | Error `Not_supported | Error `Parse_error -> false
+  | Error `Not_supported -> fail "This feature is not supported."
+  | Error `Parse_error -> fail "The parsing of your regular expression failed."
   | Ok re ->
-    clear ();
     let pos_examples, neg_examples = gen_examples mode re in
     pos_examples (push true) ;
     neg_examples (push false) ;
