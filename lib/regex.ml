@@ -102,7 +102,7 @@ let gen ~compl:with_compl alphabet =
         1, gbase ;
         proba_compl, gcompl n ;
         3, gbin n alt ;
-        3, gbin n inter ;
+        2, gbin n inter ;
         5, gbin n (fun x y -> Seq (x,y)) ;
         3, grep n ;
       ] st
