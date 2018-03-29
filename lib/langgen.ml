@@ -165,9 +165,9 @@ module[@inline always] Make
     let[@specialize] rec collect n descL descR () =
       let (_, boundL, nbSegL, indL) as descL = explode_head vecL descL n in
       let (_, boundR, nbSegR, indR) as descR = explode_head vecR descR n in
-      let bound = CCOpt.map2 (+) boundL boundR in
-      match bound with
-      | Some b when n >= b - 1 -> Nothing
+      match boundL, boundR with
+      | Some bL, Some bR when n >= bL + bR - 1 -> Nothing
+      | Some 0, _ | _, Some 0 -> Nothing
       | _ ->
         let head =
           if nbSegL <= nbSegR then
