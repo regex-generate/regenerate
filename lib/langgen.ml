@@ -26,6 +26,8 @@ module[@inline always] Make
   let everything () = Everything
   let (@:) h t () = Cons (h, t)
 
+  let langEpsilon = segmentEpsilon @: nothing
+  
   module IMap = struct
     include CCMap.Make(CCInt)
     let save k s m =
@@ -60,6 +62,38 @@ module[@inline always] Make
       k (get n) ;
       iter (n+1) k
   end
+
+  let pp_item =
+    Fmt.hbox @@ Fmt.iter ~sep:(Fmt.unit ", ") (CCFun.flip Segment.to_seq) Word.pp
+  let pp fmt (l : lang) =
+    let pp_sep = Fmt.unit "@." in
+    let rec pp n fmt l = match l() with
+      | Nothing -> ()
+      | Everything ->
+        let x = Sigma_star.get n and l' = everything in
+        pp_next n fmt x l'
+      | Cons (x,l') ->
+        pp_next n fmt x l'
+    and pp_next n fmt x l' =
+        pp_sep fmt ();
+        pp_item fmt x ;
+        pp (n+1) fmt l'
+    in
+    match l() with
+    | Nothing -> ()
+    | Everything ->
+      let x = Sigma_star.get 0 and l' = everything in
+      pp_item fmt x; pp 1 fmt l'
+    | Cons (x,l') ->
+      pp_item fmt x; pp 1 fmt l'
+  
+  let of_list l =
+    let rec aux n l () = match l with
+      | [] -> nothing ()
+      | _ ->
+        let x, rest = CCList.partition (fun s -> Word.length s = n) l in
+        Cons (Segment.of_list x, aux (n+1) rest)
+    in aux 0 l
   
   (** Classic operations *)
 
@@ -185,10 +219,7 @@ module[@inline always] Make
           let mS = IMap.singleton 0 segmentEpsilon in
           Cons (segmentEpsilon, collect 1 mS (fun () -> seq) [])
 
-  let add_epsilon x () = match x () with
-    | Nothing -> Cons (segmentEpsilon, nothing)
-    | Everything as x -> x
-    | Cons (_, t) -> Cons (segmentEpsilon, t)
+  let add_epsilon x = union x langEpsilon
 
   let rep = 
     let rec rep_with_acc acc i j re = match (i, j, re) with
@@ -226,46 +257,12 @@ module[@inline always] Make
   
   let rec gen : Word.char Regex.t -> lang = function
     | Set l -> charset l
-    | One -> segmentEpsilon @: nothing
+    | One -> langEpsilon
     | Seq (r1, r2) -> concatenate (gen r1) (gen r2)
     | Or (r1, r2) -> union (gen r1) (gen r2)
     | And (r1, r2) -> inter (gen r1) (gen r2)
     | Not r -> difference everything (gen r)
     | Rep (i, j, r) -> rep i j (gen r)
-  
-  (** Utils *)
-
-  let pp_item =
-    Fmt.hbox @@ Fmt.iter ~sep:(Fmt.unit ", ") (CCFun.flip Segment.to_seq) Word.pp
-  let pp fmt (l : lang) =
-    let pp_sep = Fmt.unit "@." in
-    let rec pp n fmt l = match l() with
-      | Nothing -> ()
-      | Everything ->
-        let x = Sigma_star.get n and l' = everything in
-        pp_next n fmt x l'
-      | Cons (x,l') ->
-        pp_next n fmt x l'
-    and pp_next n fmt x l' =
-        pp_sep fmt ();
-        pp_item fmt x ;
-        pp (n+1) fmt l'
-    in
-    match l() with
-    | Nothing -> ()
-    | Everything ->
-      let x = Sigma_star.get 0 and l' = everything in
-      pp_item fmt x; pp 1 fmt l'
-    | Cons (x,l') ->
-      pp_item fmt x; pp 1 fmt l'
-  
-  let of_list l =
-    let rec aux n l () = match l with
-      | [] -> nothing ()
-      | _ ->
-        let x, rest = CCList.partition (fun s -> Word.length s = n) l in
-        Cons (Segment.of_list x, aux (n+1) rest)
-    in aux 0 l
   
 end
 
