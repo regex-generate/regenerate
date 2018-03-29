@@ -220,7 +220,7 @@ module[@inline always] Make
           let mS = IMap.singleton 0 segmentEpsilon in
           Cons (segmentEpsilon, collect 1 mS (fun () -> seq) [])
 
-  let add_epsilon x = union x langEpsilon
+  let add_epsilonX i x = if i = 0 then union x langEpsilon else x
   let dec k = max (k-1) 0
   let rec rep_with_acc acc i j lang =
     match i, j with
@@ -228,13 +228,13 @@ module[@inline always] Make
     | 0, Some 0 -> acc 
     | i, j ->
       let acc =
-        concatenate (if i = 0 then add_epsilon lang else lang) acc
+        concatenate (add_epsilonX i lang) acc
       in
       rep_with_acc acc (dec i) (CCOpt.map dec j) lang
   let rep i j lang = match i,j with
     | 0, None -> star lang
     | i, j ->
-      let acc = lang in
+      let acc = add_epsilonX i lang in
       rep_with_acc acc (dec i) (CCOpt.map dec j) lang
 
   (** Others *)
