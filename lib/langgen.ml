@@ -129,11 +129,12 @@ module[@inline always] Make
     | None -> match seq() with
       | Nothing -> nothing, Some n, nbSeg, indices
       | Everything ->
-        let segm = Sigma_star.get n in
-        CCVector.push vec segm ;
+        if n = CCVector.size vec then
+          CCVector.push vec @@ Sigma_star.get n ;
         everything, None, nbSeg+1, n :: indices
       | Cons (segm, s) ->
-        CCVector.push vec @@ Segment.memoize segm ;
+        if n = CCVector.size vec then
+          CCVector.push vec @@ Segment.memoize segm ;
         s, None, nbSeg+1, if Segment.is_empty segm then indices else n :: indices
   
   let[@inline] concat_subterms_of_length ~n ~f validIndicesA vecA vecB =
