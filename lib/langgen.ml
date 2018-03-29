@@ -314,6 +314,7 @@ let arbitrary
       |> Sequence.to_list
     in
     let re = Regex.gen ~compl (oneofl alphabet) st in
+    Fmt.epr "Re : %a@." (Regex.pp pp) re;
     let pos_examples = f re in
     let neg_examples = f (Regex.compl re) in
     (re, pos_examples, neg_examples)

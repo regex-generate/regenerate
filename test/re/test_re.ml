@@ -12,7 +12,6 @@ let rec to_re = let open Regex in function
   | Rep (i,j,re) -> Re.repn (to_re re) i j
 
 let f (re, pos, neg) =
-  Fmt.epr "Re : %a@." (Regex.pp Fmt.char) re;
   let cre =
     try
       Re.compile @@ Re.whole_string @@ to_re re
