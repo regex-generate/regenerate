@@ -9,33 +9,23 @@ let sigma = S.of_list @@ List.map W.singleton alphabet
 module Sigma = struct type t = S.t let sigma = sigma end
 module L = Make (W) (S) (Sigma)
 
-type mode = All | Sample
-
-let gen_examples mode re =
-  let f l = match mode with
-    | Sample -> Sequence.take 20 @@ L.sample ~skip:5 l
-    | All -> Sequence.take 500 @@ L.flatten l
-  in 
-  let lang = L.gen re in
-  let pos = f lang in
-  let neg = f @@ L.compl lang in
-  pos, neg
-
 (** Web part *)
 
-let instances = Dom_html.getElementById "instances"
-let pos_instances = Dom_html.getElementById "pos-instances"
-let neg_instances = Dom_html.getElementById "neg-instances"
-let re_form = Dom_html.getElementById "re-form"
-let fail_div = Dom_html.getElementById "fail"
+let (!$) = Dom_html.getElementById
+let ($$) id c = CCOpt.get_exn @@ Dom_html.getElementById_coerce id c
 
-let re_input =
-  CCOpt.get_exn @@
-  Dom_html.getElementById_coerce "re-input" Dom_html.CoerceTo.input
-let re_select = 
-  CCOpt.get_exn @@
-  Dom_html.getElementById_coerce "re-select" Dom_html.CoerceTo.select
+let instances = !$"instances"
+let pos_instances = !$"pos-instances"
+let neg_instances = !$"neg-instances"
+let re_form = !$"re-form"
+let fail_div = !$"fail"
+let pos_msg = !$"pos-msg"
+let neg_msg = !$"neg-msg"
 
+let re_input = "re-input" $$ Dom_html.CoerceTo.input
+let re_select = "re-select" $$ Dom_html.CoerceTo.select
+
+type mode = All | Sample
 let get_mode () =
   match Js.to_string re_select##.value with
   | "all" -> All
@@ -43,11 +33,16 @@ let get_mode () =
   | _ -> assert false
 
 (** Prepare the page to show new instances. *)
+let clear_children s = s##.innerHTML := Js.string ""
 let clear () =
   instances##.classList##remove (Js.string "is-hidden") ;
-  pos_instances##.innerHTML := Js.string "" ;
-  neg_instances##.innerHTML := Js.string "" ;
-  fail_div##.innerHTML := Js.string "" ;
+  List.iter clear_children [
+    pos_instances ;
+    neg_instances ;
+    pos_msg ;
+    neg_msg ;
+    fail_div ;
+  ];
   ()
 
 (** Push a new instance. *)
@@ -60,24 +55,68 @@ let push b s =
 
 (** On failure. *)
 let fail s =
+  instances##.classList##add (Js.string "is-hidden") ;
   let html =
     Fmt.strf {|<div class="callout small alert">%s</div>|} s
   in
   fail_div##.innerHTML := Js.string html ;
-  false  
+  ()  
+
+(** When a stream is done, we show a message. *)
+let show_note elem res = 
+  let s = match res with
+    | L.Done -> ""
+    | L.GaveUp ->
+      {|<p>I give up! It doesn't look like I will produce more strings for this 
+        regular expression.
+        Maybe the next string is very long, or maybe there isn't any more strings.
+        If you want me to try harder, use the native version!</p>|}
+    | L.Finite ->
+      {|<p>That's it! 
+        This regular expression recognizes a finite number of strings.</p>|}
+  in
+  elem##.innerHTML := Js.string s
+
+(** Reimplementation of Sequence.take with an exit state. *)
+exception ExitTake
+let take n seq k =
+  let count = ref 0 in
+  try
+    seq
+      (fun x ->
+        if !count = n then raise ExitTake;
+        incr count;
+        k x)
+  with ExitTake -> L.Done
+
+let gen mode re =
+  let firsts, n = match mode with
+    | Sample -> 5, 20
+    | All -> 200, 200
+  in
+  let f l = take n @@ L.sample ~firsts ~skip:5 l in
+  let lang = L.gen re in
+
+  let pos = f lang in
+  let pos_res = pos (push true) in
+  show_note pos_msg pos_res ;
+  
+  let neg = f @@ L.compl lang in
+  let neg_res = neg (push false) in
+  show_note neg_msg neg_res ;
+
+  ()
 
 let handler _ _ =
   let s = re_input##.value in
   let mode = get_mode () in
   clear ();
-  match parse @@ Js.to_string s with
-  | Error `Not_supported -> fail "This feature is not supported."
-  | Error `Parse_error -> fail "The parsing of your regular expression failed."
-  | Ok re ->
-    let pos_examples, neg_examples = gen_examples mode re in
-    pos_examples (push true) ;
-    neg_examples (push false) ;
-    false
+  begin match parse @@ Js.to_string s with
+    | Error `Not_supported -> fail "This feature is not supported."
+    | Error `Parse_error -> fail "The parsing of your regular expression failed."
+    | Ok re -> gen mode re
+  end;
+  false
   
 let () =
   let _listener =

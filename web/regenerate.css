@@ -16,11 +16,15 @@
     color: #c60f13;
 }
 
+#neg-msg, #pos-msg {
+    color: #707070;
+    font-size: 0.8em;
+}
 
-#pos-instances {
+#pos-instances #pos-msg {
     float:right;
 }
-#neg-instances {
+#neg-instances #neg-msg {
     float:left;
 }
 

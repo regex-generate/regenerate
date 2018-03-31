@@ -41,7 +41,8 @@ let[@inline] make_impl ~impl =
       let lang = A.gen re in
       match conf with
       | All -> A.flatten lang
-      | Sample { skip ; length } -> A.sample ~skip ?n:length lang
+      | Sample { skip ; length } ->
+        CCFun.(%) ignore @@ A.sample ~skip ?n:length lang
       | Take n -> Sequence.take n @@ A.flatten lang
 
 let tl = make_impl ~impl:ThunkList ~sigma:"ab"

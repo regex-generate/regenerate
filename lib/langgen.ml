@@ -271,22 +271,33 @@ module[@inline always] Make
 
   let flatten s = flatten_from 0 s
 
-
-  (** [sample ~skip n lang] returns a sequence of on average [n] elements.
+  type res = Done | Finite | GaveUp
+  
+  (** [sample ~skip ~n lang] returns a sequence of on average [n] elements.
       [lang] is only consumed when needed. 
 
       We sample one element every [k], where [k] follows a power law of
       average [skip]. Furthermore, if we consume more than [sqrt k] empty segments,
       we assume that the rest of the segments will be infinitely empty and
-      stop. *)
+      stop. 
+      
+      If [firsts] is provided, we always output the [firsts] first elements.
+  *)
   exception ExitSample
-  let sample ?(st=Random.State.make_self_init ()) ?n ~skip lang (k : _ -> unit) = 
+  let sample ?(st=Random.State.make_self_init ()) ?n ?(firsts=0) ~skip lang (k : _ -> unit) = 
     let i = ref (-1) in
+
+    (* The number of element to always take at the beginning. *)
+    let rem_firsts = ref firsts in 
 
     (* Draw the amount of element we skip and store the next element to take. *)
     let draw_skip st =
-      let u = Random.State.float st 1. in
-      1 + int_of_float (-. (float skip) *. log1p (-. u))
+      let f = !rem_firsts in
+      if f > 0
+      then (decr rem_firsts ; 0)
+      else
+        let u = Random.State.float st 1. in
+        1 + int_of_float (-. (float skip) *. log1p (-. u))
     in
     let next = ref (draw_skip st) in
 
@@ -318,18 +329,18 @@ module[@inline always] Make
       let i0 = !i in
       let next segm seq =
         match Segment.to_seq segm onSegm with
-        | exception ExitSample -> ()
+        | exception ExitSample -> Done
         | () ->
           let i1 = !i in
           if i0 <> i1 then walk_lang (n+1) seq
-          else if !budget <= 0 then ()
+          else if !budget <= 0 then GaveUp
           else begin
             decr budget ;
             walk_lang (n+1) seq
           end
       in
       match seq () with
-      | Nothing -> ()
+      | Nothing -> Finite
       | Everything ->
         let segm = Sigma_star.get n in
         next segm everything
@@ -360,6 +371,7 @@ let arbitrary
     let f l =
       l
       |> L.sample ~st ~skip ~n:samples
+      |> CCFun.(%) ignore
       |> Sequence.to_list
     in
     let pos_examples = f lang in
