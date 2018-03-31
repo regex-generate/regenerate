@@ -23,11 +23,11 @@ let pos_msg = !$"pos-msg"
 let neg_msg = !$"neg-msg"
 
 let re_input = "re-input" $$ Dom_html.CoerceTo.input
-let re_select = "re-select" $$ Dom_html.CoerceTo.select
+let mode_select = "mode-select" $$ Dom_html.CoerceTo.select
 
 type mode = All | Sample
 let get_mode () =
-  match Js.to_string re_select##.value with
+  match Js.to_string mode_select##.value with
   | "all" -> All
   | "sample" -> Sample
   | _ -> assert false
@@ -107,7 +107,7 @@ let gen mode re =
 
   ()
 
-let handler _ _ =
+let handler_generate _ _ =
   let s = re_input##.value in
   let mode = get_mode () in
   clear ();
@@ -117,9 +117,24 @@ let handler _ _ =
     | Ok re -> gen mode re
   end;
   false
-  
-let () =
-  let _listener =
-    Dom_events.listen re_form Dom_events.Typ.submit handler
+
+
+(** Regular expression list and generator. *)
+
+let re_gen_button = !$"re-gen"
+let st = Random.State.make_self_init ()
+let handler_gen_re _ _ =
+  let re =
+    Regex.gen ~compl:true (QCheck.Gen.oneofl alphabet) st
   in
+  re_input##.value :=
+    Fmt.kstrf Js.string "%a@." (Regex.pp Fmt.char) re ;
+  false
+
+
+let () =
+  ignore @@
+  Dom_events.listen re_form Dom_events.Typ.submit handler_generate ;
+  ignore @@
+  Dom_events.listen re_gen_button Dom_events.Typ.click handler_gen_re ;
   ()
