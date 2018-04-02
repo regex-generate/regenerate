@@ -47,10 +47,12 @@ let clear () =
 
 (** Push a new instance. *)
 let push b s =
-  let item = Dom_html.createLi Dom_html.document in
+  let itemLi = Dom_html.createLi Dom_html.document in
+  let item = Dom_html.createCode Dom_html.document in
   item##.textContent := (Js.some @@ Js.string s) ;
+  let _ = Dom.appendChild itemLi item in
   let parent = if b then pos_instances else neg_instances in
-  let _ = Dom.appendChild parent item in
+  let _ = Dom.appendChild parent itemLi in
   ()
 
 (** On failure. *)
