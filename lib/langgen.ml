@@ -309,7 +309,7 @@ module[@inline always] Make
     in
 
     (* Our "empty segment" budget. If we exceed this, we stop. *)
-    let budget_of_skip n = 1 + (int_of_float @@ sqrt @@ float n) in    
+    let budget_of_skip n = 2 + (int_of_float @@ sqrt @@ float n) in    
     let budget = ref (budget_of_skip !next) in
     
     let onSegm x =
@@ -333,7 +333,7 @@ module[@inline always] Make
         | () ->
           let i1 = !i in
           if i0 <> i1 then walk_lang (n+1) seq
-          else if !budget <= 0 then GaveUp
+          else if !budget < 0 then GaveUp
           else begin
             decr budget ;
             walk_lang (n+1) seq
