@@ -144,6 +144,7 @@ let () =
     (* let elem = createLicode re in *)
     let button = Dom_html.createA Dom_html.document in
     button##setAttribute (Js.string "href") (Js.string "#") ;
+    button##setAttribute (Js.string "data-close") (Js.string "") ;
     (* let _ = Dom.appendChild button elem in *)
     button##.textContent := Js.Opt.return (Js.string re) ;
     let _ = Dom_events.listen button Dom_events.Typ.click handler in
