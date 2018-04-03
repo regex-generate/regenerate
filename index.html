@@ -13,11 +13,9 @@
   </head>
   <body>
 <div class="grid-container">
-
 <div class="grid-x  grid-margin-x">
-
-  <div class="cell auto"></div>
-  <div class="cell small-8">
+<div class="cell auto"></div>
+<div class="cell small-8">
   <h1 class="text-center">Regenerate</h1>
 
   <p class="lead">
@@ -49,65 +47,89 @@
              placeholder="Regular expression"
              value="(b(ab*a)*b|a)*"
              type="text"/>
-      <select class="input-group-field cell shrink" id="re-select">
+      <a class="input-group-label" data-open="explanationRe">?</a>
+      <div class="input-group-button">
+        <button type="button" class="button" id="re-gen">Generate</button>
+        <button type="button" class="button dropdown arrow-only"
+                 data-toggle="re-menu" >
+          <span class="show-for-sr">Examples</span>
+        </button>
+      </div>
+    </div>
+    
+    <div class="input-group grid-x">
+      <select class="input-group-field cell shrink" id="mode-select">
         <option selected="selected" value="sample">Select some samples</option>
         <option value="all">Give me everything</option>
       </select>
-      <a class="input-group-label" data-open="explanationRe">?</a>
-      <div class="input-group-button">
-        <input type="submit" class="button" value="Generate!">
+      <div class="input-group-button cell auto">
+        <input type="submit" class="button expanded" value="Go!">
       </div>
     </div>
   </form>
+
   <div id="fail"></div>
-
-  <div class="small reveal" id="explanationRe" data-reveal>
-    <h1>Which regular expressions?</h1>
-    <p class="lead">You can use most posix extended regular expressions plus complement and intersection.
-      More precisely:</p>
-    <ul>
-      <li><code>a</code>: A single char.</li>
-      <li><code>[ab]</code>: Character sets.
-        <ul>
-          <li><code>[^ab]</code>: Complement Character sets.</li>
-          <li><code>[a-c]</code>: Character ranges.</li>
-        </ul>
-      </li>
-      <li><code>ab</code>: Sequence.</li>
-      <li><code>a|b</code>: Alternative.</li>
-      <li><code>a&b</code>: Intersection.</li>
-      <li><code>~a</code>: Complement.</li>
-      <li><code>a{i,j}</code>: Repetition.
-        <ul>
-          <li><code>a*</code> is <code>a{0,}</code></li>
-          <li><code>a+</code> is <code>a{1,}</code></li>
-          <li><code>a?</code> is <code>a{0,1}</code></li>
-        </ul>
-      </li>
-    </ul>
-
-    <p>Back references, character classes, anchoring and lookahead/lookbehind are not
-      supported.</p>
-  
-    <button class="close-button" data-close aria-label="Close modal" type="button">
-      <span aria-hidden="true">&times;</span>
-    </button>
-  </div>
-  </div>
-  <div class="cell auto"></div>
+</div>
+<div class="cell auto"></div>
 </div>
 
 <div class="grid-x grid-margin-x is-hidden instances" id="instances">
   <div class="cell small-6 positive">
     <h2 class="subheader">Positive instances</h2>
     <ul class="no-bullet" id="pos-instances"></ul>
+    <div id="pos-msg"></div>
   </div>
   <div class="cell small-6 negative">
     <h2 class="subheader">Negative instances</h2>
     <ul class="no-bullet" id="neg-instances"></ul>
+    <div id="neg-msg"></div>
   </div>
 </div>
+
 </div>
+
+<div class="dropdown-pane"
+     id="re-menu"
+     data-position="bottom" data-alignment="right" data-dropdown
+     data-hover="true" data-hover-pane="true">
+  <ul class="vertical menu" id="re-list">
+    <li class="menu-text">Some interesting examples:</li>
+  </ul>
+</div>
+
+<div class="small reveal" id="explanationRe" data-reveal>
+  <h1>Which regular expressions?</h1>
+  <p class="lead">You can use most posix extended regular expressions plus complement and intersection.
+    More precisely:</p>
+  <ul>
+    <li><code>a</code>: A single char.</li>
+    <li><code>[ab]</code>: Character sets.
+      <ul>
+        <li><code>[^ab]</code>: Complement Character sets.</li>
+        <li><code>[a-c]</code>: Character ranges.</li>
+      </ul>
+    </li>
+    <li><code>ab</code>: Sequence.</li>
+    <li><code>a|b</code>: Alternative.</li>
+    <li><code>a&b</code>: Intersection.</li>
+    <li><code>~a</code>: Complement.</li>
+    <li><code>a{i,j}</code>: Repetition.
+      <ul>
+        <li><code>a*</code> is <code>a{0,}</code></li>
+        <li><code>a+</code> is <code>a{1,}</code></li>
+        <li><code>a?</code> is <code>a{0,1}</code></li>
+      </ul>
+    </li>
+  </ul>
+
+  <p>Back references, character classes, anchoring and lookahead/lookbehind are not
+    supported.</p>
+  
+  <button class="close-button" data-close aria-label="Close modal" type="button">
+    <span aria-hidden="true">&times;</span>
+  </button>
+</div>
+
 
 <div class="fork-me-wrapper">
     <div class="fork-me">
@@ -119,7 +141,6 @@
 
 <script
 	src="https://code.jquery.com/jquery-3.3.1.min.js"
-	integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
 	crossorigin="anonymous"></script>
 <script
 	src="regenerate_web.bc.js" ></script>
