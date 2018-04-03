@@ -2838,7 +2838,7 @@ k=f(b(cc[17],g)),l=0;dP(dM,b(k,function(a){return dN(l,a)}))}else
 if(ek<=a[1])dO(lx);else
 dO(ly);return 0};bC(function(b){function
 c(c,a){cd.value=b.toString();return 0}var
-a=dp(aX,iu);a.setAttribute("href","#");a.textContent=b.toString();bY(0,a,dm,c);bX(li,a);return 0},lz);var
+a=dp(aX,iu);a.setAttribute("href","#");a.setAttribute("data-close",d);a.textContent=b.toString();bY(0,a,dm,c);bX(li,a);return 0},lz);var
 lB=ag(lA),dR=bL(0),lC=function(w,v){function
 h(g){var
 c=af(g,cK(cb));if(0<=c){var
