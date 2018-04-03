@@ -56,13 +56,13 @@ let prio = function
   | Or (_,_) -> 2
   | Seq (_,_) -> 3
   | Not _ -> 4
-  | Rep (_,_,_) -> 5
+  | Rep (_,_,_) -> -1
   | One
   | Set _ -> 6
 
 let rec pp ?(epsilon=true) ppalpha fmt x =
   let f fmt y =
-    if prio y < prio x
+    if prio y < prio x || prio y = -1
     then Fmt.parens (pp ppalpha) fmt y
     else pp ~epsilon ppalpha fmt y
   in
