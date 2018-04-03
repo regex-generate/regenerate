@@ -113,6 +113,12 @@ module[@inline always] Make
   let compl = difference everything
   
   (** Concatenation *)
+
+  (** Invariants for each language: 
+      - [nbSeg = List.length indices]
+      - After [explode_head], [CCVector.size vec >= n]
+      - if [bound = Some n] then [n >= nbSeg] and [seqₙ = Nothing].
+  *)
     
   let[@inline] explode_head vec (seq, bound, nbSeg, indices) n =
     match bound with
@@ -120,13 +126,18 @@ module[@inline always] Make
     | None -> match seq() with
       | Nothing -> nothing, Some n, nbSeg, indices
       | Everything ->
-        if n = CCVector.size vec then
-          CCVector.push vec @@ Sigma_star.get n ;
+        begin if n = CCVector.size vec then
+            CCVector.push vec @@ Sigma_star.get n
+        end ;
         everything, None, nbSeg+1, n :: indices
       | Cons (segm, s) ->
-        if n = CCVector.size vec then
-          CCVector.push vec @@ Segment.memoize segm ;
-        s, None, nbSeg+1, if Segment.is_empty segm then indices else n :: indices
+        begin if n = CCVector.size vec then
+            CCVector.push vec @@ Segment.memoize segm
+        end;
+        let b = Segment.is_empty segm in
+        let indices' = if b then indices else n :: indices in
+        let nbSeg' = if b then nbSeg else nbSeg+1 in
+        s, None, nbSeg', indices'
   
   let[@inline] concat_subterms_of_length ~n ~f validIndicesA vecA vecB =
     let rec combine_segments acc = function
@@ -158,7 +169,8 @@ module[@inline always] Make
       let (_, boundR, nbSegR, indR) as descR = explode_head vecR descR n in
       match boundL, boundR with
       | Some bL, Some bR when n >= bL + bR - 1 -> Nothing
-      | Some 0, _ | _, Some 0 -> Nothing
+      | Some _, _ when nbSegL = 0 -> Nothing
+      | _, Some _ when nbSegR = 0 -> Nothing
       | _ ->
         let head =
           if nbSegL <= nbSegR then
