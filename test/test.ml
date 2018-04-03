@@ -27,11 +27,11 @@ let assert_sorted s =
  * let l = !!["a"; "ab"; "c" ;"abc"]
  * let a = !!["a"] *)
 
-let langs = [|
-  Seq (Not (Atom 'a'), Atom 'a') ;
-  star (Atom 'a') ;
-  star (Seq (Atom 'a', star (Atom 'b'))) ;
-  star (Seq (Or (Atom 'a', One), star (Atom 'b'))) ;
+let langs = Regex.[|
+  seq [compl (char 'a'); char 'a'] ;
+  star (atom 'a') ;
+  star (Seq (atom 'a', star (atom 'b'))) ;
+  star (Seq (Or (atom 'a', One), star (atom 'b'))) ;
 |]
 
 let id x = x
@@ -42,14 +42,11 @@ let rec take n s () = match s() with
     if n <= 0 then L.Nothing
     else L.Cons (seg, take (n-1) s)
 
-let pp_seg = L.pp_item (Fmt.quote W.pp)
-let pp = L.pp (Fmt.quote W.pp)
-
 let print_all ?n (lang : L.lang) =
   lang
   (* |> L.flatten *)
   |> (match n with Some n -> take n | None -> id)
-  |> L.print W.pp
+  |> Fmt.pr "%a@." L.pp
 
 let time_up_to_gen n lang =
   let i = lang
