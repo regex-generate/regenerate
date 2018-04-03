@@ -64,28 +64,18 @@ module[@inline always] Make
   end
 
   let pp_item =
-    Fmt.hbox @@ Fmt.iter ~sep:(Fmt.unit ", ") (CCFun.flip Segment.to_seq) Word.pp
+    Fmt.parens @@ Fmt.hbox @@ Fmt.iter ~sep:(Fmt.unit ", ") (CCFun.flip Segment.to_seq) Word.pp
   let pp fmt (l : lang) =
     let pp_sep = Fmt.unit "@." in
-    let rec pp n fmt l = match l() with
-      | Nothing -> ()
-      | Everything ->
-        let x = Sigma_star.get n and l' = everything in
-        pp_next n fmt x l'
+    let rec pp fmt l = 
+      pp_sep fmt ();
+      match l() with
+      | Nothing -> Fmt.pf fmt "(Nothing)"
+      | Everything -> Fmt.pf fmt "(Everything)"
       | Cons (x,l') ->
-        pp_next n fmt x l'
-    and pp_next n fmt x l' =
-        pp_sep fmt ();
-        pp_item fmt x ;
-        pp (n+1) fmt l'
+        pp_item fmt x ; pp fmt l'
     in
-    match l() with
-    | Nothing -> ()
-    | Everything ->
-      let x = Sigma_star.get 0 and l' = everything in
-      pp_item fmt x; pp 1 fmt l'
-    | Cons (x,l') ->
-      pp_item fmt x; pp 1 fmt l'
+    pp fmt l
   
   let of_list l =
     let rec aux n l () = match l with
