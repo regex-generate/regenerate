@@ -21,10 +21,18 @@ let re_form = !$"re-form"
 let fail_div = !$"fail"
 let pos_msg = !$"pos-msg"
 let neg_msg = !$"neg-msg"
+let re_list = !$"re-list"
 
 let re_input = "re-input" $$ Dom_html.CoerceTo.input
 let mode_select = "mode-select" $$ Dom_html.CoerceTo.select
 
+let createLicode s = 
+  let itemLi = Dom_html.createLi Dom_html.document in
+  let item = Dom_html.createCode Dom_html.document in
+  item##.textContent := (Js.some @@ Js.string s) ;
+  let _ = Dom.appendChild itemLi item in
+  itemLi
+  
 type mode = All | Sample
 let get_mode () =
   match Js.to_string mode_select##.value with
@@ -47,12 +55,9 @@ let clear () =
 
 (** Push a new instance. *)
 let push b s =
-  let itemLi = Dom_html.createLi Dom_html.document in
-  let item = Dom_html.createCode Dom_html.document in
-  item##.textContent := (Js.some @@ Js.string s) ;
-  let _ = Dom.appendChild itemLi item in
+  let elem = createLicode s in
   let parent = if b then pos_instances else neg_instances in
-  let _ = Dom.appendChild parent itemLi in
+  let _ = Dom.appendChild parent elem in
   ()
 
 (** On failure. *)
@@ -122,6 +127,31 @@ let handler_generate _ _ =
 
 
 (** Regular expression list and generator. *)
+
+let re_examples = [
+  "(b(ab*a)*b|a)*";
+  "(ab*)*";
+  "~(a*)|a*";
+  "~(a*)&a*";
+  "(b*ab*ab*a)*b*";
+]
+let () =
+  let add_re_to_list re =
+    let handler _ _ =
+      re_input##.value := Js.string re ;
+      false
+    in
+    (* let elem = createLicode re in *)
+    let button = Dom_html.createA Dom_html.document in
+    button##setAttribute (Js.string "href") (Js.string "#") ;
+    (* let _ = Dom.appendChild button elem in *)
+    button##.textContent := Js.Opt.return (Js.string re) ;
+    let _ = Dom_events.listen button Dom_events.Typ.click handler in
+    let _ = Dom.appendChild re_list button in
+    ()
+  in
+  List.iter add_re_to_list re_examples
+
 
 let re_gen_button = !$"re-gen"
 let st = Random.State.make_self_init ()
