@@ -96,25 +96,25 @@ let gen ~compl:with_compl alphabet =
       8, gatom ;
       5, gset ;
     ] in
-  let rec gen n st =
+  let rec gen nbRep n st =
     if n <= 1 then gbase st else
       frequency [
         1, gbase ;
-        proba_compl, gcompl n ;
-        3, gbin n alt ;
-        2, gbin n inter ;
-        5, gbin n (fun x y -> Seq (x,y)) ;
-        3, grep n ;
+        proba_compl, gcompl nbRep n ;
+        3, gbin nbRep n alt ;
+        2, gbin nbRep n inter ;
+        5, gbin nbRep n (fun x y -> Seq (x,y)) ;
+        nbRep * 2, grep nbRep n ;
       ] st
-  and grep n =
+  and grep nbRep n =
     int_bound 3 >>= fun i ->
     opt (int_bound 5) >>= fun j ->
-    gen (n-1) >|= fun a ->
+    gen (nbRep - 1) (n-1) >|= fun a ->
     rep i (CCOpt.map ((+) i) j) a
-  and gcompl n = gen (n-1) >|= compl
-  and gbin n f =
-    gen ((n-1)/2) >>= fun a ->
-    gen ((n-1)/2) >|= fun b ->
+  and gcompl nbRep n = gen nbRep (n-1) >|= compl
+  and gbin nbRep n f =
+    gen nbRep ((n-1)/2) >>= fun a ->
+    gen nbRep ((n-1)/2) >|= fun b ->
     f a b
   in
-  sized_size (int_range 2 8) gen
+  sized_size (int_range 2 20) (gen 2)
