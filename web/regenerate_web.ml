@@ -161,7 +161,7 @@ let handler_gen_re _ _ =
     Regex.gen ~compl:true (QCheck.Gen.oneofl alphabet) st
   in
   re_input##.value :=
-    Fmt.kstrf Js.string "%a@." (Regex.pp Fmt.char) re ;
+    Fmt.kstrf Js.string "%a@." (Regex.pp ~epsilon:false Fmt.char) re ;
   false
 
 

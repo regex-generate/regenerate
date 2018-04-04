@@ -63,13 +63,13 @@ let prio = function
 let rec pp ?(epsilon=true) ppalpha fmt x =
   let f fmt y =
     if prio y < prio x || prio y = -1
-    then Fmt.parens (pp ppalpha) fmt y
+    then Fmt.parens (pp ~epsilon ppalpha) fmt y
     else pp ~epsilon ppalpha fmt y
   in
   match x with
-  | One -> Fmt.pf fmt (if epsilon then"ε" else "")
   | Set [x] -> Fmt.pf fmt "%a" ppalpha x
   | Set l -> Fmt.pf fmt "[%a]" (Fmt.list ~sep:Fmt.nop ppalpha) l
+  | One -> Fmt.pf fmt (if epsilon then "ε" else "")
   | Seq (a,b) -> Fmt.pf fmt "%a%a" f a f b
   | Or (a,b) -> Fmt.pf fmt "%a|%a" f a f b
   | And (a,b) -> Fmt.pf fmt "%a&%a" f a f b
