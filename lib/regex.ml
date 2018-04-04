@@ -79,6 +79,7 @@ let rec pp ?(epsilon=true) ppalpha fmt x =
   | Rep (0,None,a) -> Fmt.pf fmt "%a*" f a
   | Rep (1,None,a) -> Fmt.pf fmt "%a+" f a
   | Rep (i,None,a) -> Fmt.pf fmt "%a{%i,}" f a i
+  | Rep (i,Some j,a) when i = j -> Fmt.pf fmt "%a{%i}" f a i
   | Rep (i,Some j,a) -> Fmt.pf fmt "%a{%i,%i}" f a i j
 
 let gen ~compl:with_compl alphabet =
