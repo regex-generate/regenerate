@@ -2,7 +2,7 @@ type 'a cset = 'a list
 
 type 'a t
   = One
-  | Set of 'a cset
+  | Set of bool * 'a cset
   | Seq of 'a t * 'a t
   | Or of 'a t * 'a t
   | And of 'a t * 'a t
@@ -12,10 +12,11 @@ type 'a t
 (** Smart constructors *)
 
 let epsilon = One
-let void = Set []
-let atom c = Set [c]
+let void = Set (true, [])
+let atom c = Set (true, [c])
 let char c = atom c
-let charset cs = Set cs
+let charset cs = Set (true, cs)
+let complset cs = Set (false, cs)
 let enumerate c1 c2 =
   if c1 > c2 then None
   else
@@ -67,9 +68,10 @@ let rec pp ?(epsilon=true) ppalpha fmt x =
     else pp ~epsilon ppalpha fmt y
   in
   match x with
-  | Set [x] -> Fmt.pf fmt "%a" ppalpha x
-  | Set l -> Fmt.pf fmt "[%a]" (Fmt.list ~sep:Fmt.nop ppalpha) l
   | One -> Fmt.pf fmt (if epsilon then "ε" else "")
+  | Set (true,[x]) -> Fmt.pf fmt "%a" ppalpha x
+  | Set (b,l) -> Fmt.pf fmt "[%s%a]"
+                   (if b then "" else "^") (Fmt.list ~sep:Fmt.nop ppalpha) l
   | Seq (a,b) -> Fmt.pf fmt "%a%a" f a f b
   | Or (a,b) -> Fmt.pf fmt "%a|%a" f a f b
   | And (a,b) -> Fmt.pf fmt "%a&%a" f a f b
@@ -86,8 +88,9 @@ let gen ~compl:with_compl alphabet =
   let proba_compl = if with_compl then 3 else 0 in
   let gatom = alphabet >|= atom in
   let gset =
+    bool >>= fun b ->
     map
-      (fun l -> charset @@ CCList.uniq ~eq:(=) l)
+      (fun l -> Set (b, CCList.uniq ~eq:(=) l))
       (list_size (1 -- 10) alphabet)
   in
   let gbase = frequency [

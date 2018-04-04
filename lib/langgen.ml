@@ -243,17 +243,20 @@ module[@inline always] Make
 
   (** Others *)
 
-  let charset l = match l with
-    | [] -> nothing
+  let charset b l = match l with
+    | [] when b -> nothing
     | l ->
-      let segm1 = Segment.of_list @@ List.map Word.singleton l in
+      let set = Segment.of_list @@ List.map Word.singleton l in
+      let segm1 =
+        if b then set else Segment.diff Sigma.sigma set
+      in
       Segment.empty @: segm1 @: nothing
 
 
   (****)
 
   let rec gen : Word.char Regex.t -> lang = function
-    | Set l -> charset l
+    | Set (b, l) -> charset b l
     | One -> langEpsilon
     | Seq (r1, r2) -> concatenate (gen r1) (gen r2)
     | Or (r1, r2) -> union (gen r1) (gen r2)

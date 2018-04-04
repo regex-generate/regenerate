@@ -59,7 +59,7 @@ let parse s =
       (* if newline then Re.eol else Re.eos *)
     end else if accept '[' then begin
       if accept '^' then
-        Regex.compl (Regex.char '\n')
+        Regex.complset (bracket [])
       else
         Regex.charset (bracket [])
     end else
