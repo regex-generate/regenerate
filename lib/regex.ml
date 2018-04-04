@@ -94,7 +94,7 @@ let gen ~compl:with_compl alphabet =
       (list_size (1 -- 10) alphabet)
   in
   let gbase = frequency [
-      1, pure void ;
+      (* 1, pure void ; *)
       1, pure epsilon ;
       8, gatom ;
       5, gset ;
