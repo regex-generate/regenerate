@@ -121,7 +121,10 @@ let handler_generate _ _ =
   begin match parse @@ Js.to_string s with
     | Error `Not_supported -> fail "This feature is not supported."
     | Error `Parse_error -> fail "The parsing of your regular expression failed."
-    | Ok re -> gen mode re
+    | Ok re ->
+      try gen mode re
+      with exn ->
+        Firebug.console##error (Js.string @@ Printexc.to_string exn)
   end;
   false
 
