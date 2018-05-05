@@ -96,12 +96,13 @@ let take n seq k =
         k x)
   with ExitTake -> L.Done
 
+let st = Random.State.make_self_init ()
 let gen mode re =
   let firsts, n = match mode with
     | Sample -> 5, 20
     | All -> 200, 200
   in
-  let f l = take n @@ L.sample ~firsts ~skip:5 l in
+  let f l = take n @@ L.sample ~st ~firsts ~skip:5 l in
   let lang = L.gen re in
 
   let pos = f lang in
@@ -158,7 +159,6 @@ let () =
 
 
 let re_gen_button = !$"re-gen"
-let st = Random.State.make_self_init ()
 let handler_gen_re _ _ =
   let re =
     Regex.gen ~compl:true (QCheck.Gen.oneofl alphabet) st
