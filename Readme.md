@@ -1,3 +1,56 @@
-Regenerate
+[Regenerate][web]
 ----------
 
+Regenerate is a tool to generate test-cases for regular expression engines.
+
+Regenerate takes a [*regular* expression][re] and generates strings that match it.
+It handles most posix extended regular expressions along with
+complement (`~a`) and intersection (`a&b`).
+Since it handles complement, it can also generate strings that
+*don't* match a given regular expression.
+
+Regenerate is both a tool to generate samples and a library to define test harnesses. There is also an [online demo][web] of the tool.
+
+## Command line tool
+
+The command line tool can generate example strings matching a given regex. it takes
+a regex using the POSIX extended regular expression syntax. For example, here
+is a set of samples that verifies the regex `(1(01*0)*1|0)*` on the alphabet composed of `0` and `1`:
+
+```
+% regenerate generate --sample 5 --alphabet "01" "(1(01*0)*1|0)*"
+01001
+11000
+000011
+001001
+001100
+011000
+111111
+0000110
+0011000
+0101101
+1011101
+1101001
+00010101
+00100100
+```
+
+Please consult the help for more details, or play with the [online demo][web].
+
+## Library
+
+The `regenerate` library allow to easily define test harnesses for regular expression engines. It contains utilities to randomly generate regular expressions and
+associated positive and negative samples. The main entry point of the library
+is the `Regenerate.arbitrary` function which exposes the sample generation as a 
+[qcheck](https://github.com/c-cube/qcheck/) generator.
+
+See [`test_re.ml`](test/re/test_re.ml) for an example test harness for
+[`re`](https://github.com/ocaml/ocaml-re).
+
+## Website
+
+Code for the online demo is hosted in the [web/](web] directory. It uses fairly
+simple `js_of_ocaml` code.
+
+[re]: https://en.wikipedia.org/wiki/Regular_expression
+[web]: https://drup.github.io/regenerate/
