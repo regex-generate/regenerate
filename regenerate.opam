@@ -1,9 +1,9 @@
-opam-version: "2.0"
-version: "~dev"
+opam-version: "1.2"
+version: "dev"
 synopsis: "Generate strings matching a given regular expression"
 maintainer: "Drup <drupyog@zoho.com>"
 authors: "Drup <drupyog@zoho.com>"
-license: "MIT"
+license: "ISC"
 homepage: "https://github.com/Drup/regenerate"
 bug-reports: "https://github.com/Drup/regenerate/issues"
 dev-repo: "git+https://github.com/Drup/regenerate.git"
@@ -16,10 +16,13 @@ depends: [
   "mtime"
   "oseq"
   "sequence"
-  "re" {with-test}
+  "re" {test}
 ]
+available: ocaml-version >= "4.01"
 build: [
   ["jbuilder" "subst" "-n" name] {pinned}
-  ["jbuilder" "build" "-p" name "-j" jobs]
-  ["jbuilder" "runtest" "-p" name "-j" jobs] {with-test}
+  ["jbuilder" "build" "-p" name "-j" jobs "@install"]
+]
+build-test: [
+  ["jbuilder" "runtest" "-p" name]
 ]

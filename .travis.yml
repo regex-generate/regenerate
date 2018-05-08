@@ -8,8 +8,6 @@ env:
   - PINS="regenerate:."
   - DISTRO="debian-stable"
   matrix:
-  - PACKAGE="regenerate" OCAML_VERSION="3.12.1"
-  - PACKAGE="regenerate" OCAML_VERSION="4.00.1"
   - PACKAGE="regenerate" OCAML_VERSION="4.01.0"
   - PACKAGE="regenerate" OCAML_VERSION="4.02.3"
   - PACKAGE="regenerate" OCAML_VERSION="4.03.0"
