@@ -8,7 +8,6 @@ bug-reports: "https://github.com/Drup/regenerate/issues"
 dev-repo: "git+https://github.com/Drup/regenerate.git"
 depends: [
   "jbuilder" {build}
-  "ocaml"
   "cmdliner"
   "fmt"
   "containers"
@@ -17,7 +16,7 @@ depends: [
   "sequence"
   "re" {test}
 ]
-available: ocaml-version >= "4.01"
+available: ocaml-version >= "4.02"
 build: [
   ["jbuilder" "subst" "-n" name] {pinned}
   ["jbuilder" "build" "-p" name "-j" jobs "@install"]
