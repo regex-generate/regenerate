@@ -16,7 +16,7 @@ module List (C : sig include Set.OrderedType val pp : t Fmt.t end) = struct
   let singleton x = [x]
   let length = List.length
   let append = List.append
-  let cons = List.cons
+  let cons x l = x :: l
   let pp = CCFormat.(list ~sep:(fun _ () -> ()) C.pp)
 end
 
