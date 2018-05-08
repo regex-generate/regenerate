@@ -6,6 +6,8 @@ license: "ISC"
 homepage: "https://github.com/Drup/regenerate"
 bug-reports: "https://github.com/Drup/regenerate/issues"
 dev-repo: "git+https://github.com/Drup/regenerate.git"
+doc: "https://drup.github.io/regenerate/doc/dev/"
+
 depends: [
   "jbuilder" {build}
   "cmdliner"
