@@ -1,6 +1,5 @@
 opam-version: "1.2"
 version: "dev"
-synopsis: "Generate strings matching a given regular expression"
 maintainer: "Drup <drupyog@zoho.com>"
 authors: "Drup <drupyog@zoho.com>"
 license: "ISC"
