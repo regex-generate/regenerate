@@ -14,11 +14,11 @@ Regenerate is both a tool to generate samples and a library to define test harne
 ## Command line tool
 
 The command line tool can generate example strings matching a given regex. it takes
-a regex using the POSIX extended regular expression syntax. For example, here
-is a set of samples that verifies the regex `(1(01*0)*1|0)*` on the alphabet composed of `0` and `1`:
+a regex using the POSIX extended regular expression syntax (or [ERE][] for short). For example, here
+is a set of samples that are matched by the regex `(1(01*0)*1|0)*` on the alphabet composed of `0` and `1`:
 
 ```
-% regenerate generate --sample 5 --alphabet "01" "(1(01*0)*1|0)*"
+% regenerate gen --sample 5 --alphabet "01" "(1(01*0)*1|0)*"
 01001
 11000
 000011
@@ -45,12 +45,16 @@ is the `Regenerate.arbitrary` function which exposes the sample generation as a
 [qcheck](https://github.com/c-cube/qcheck/) generator.
 
 See [`test_re.ml`](test/re/test_re.ml) for an example test harness for
-[`re`](https://github.com/ocaml/ocaml-re).
+[`re`](https://github.com/ocaml/ocaml-re). 
+You can also find (wip) [documentation for the dev version for the API][docdev].
 
 ## Website
 
-Code for the online demo is hosted in the [web/](web] directory. It uses fairly
-simple `js_of_ocaml` code.
+Code for the online demo is hosted in the [web/](web) directory. It uses fairly
+simple [`js_of_ocaml`][jsoo] code.
 
 [re]: https://en.wikipedia.org/wiki/Regular_expression
 [web]: https://drup.github.io/regenerate/
+[ERE]: https://en.wikipedia.org/wiki/Regular_expression#Standards
+[jsoo]: http://ocsigen.org/js_of_ocaml
+[docdev]: https://drup.github.io/regenerate/doc/dev/
