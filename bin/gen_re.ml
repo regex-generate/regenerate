@@ -1,6 +1,8 @@
 open Regenerate
 open Cmdliner
 
+let () = Random.self_init ()
+
 module W = Word.String
 
 type segment_impl =
@@ -118,7 +120,7 @@ let time_limit =
 
 let sigma =
   let doc = Arg.info ~docv:"ALPHABET" ~doc:"Alphabet used by the regular expression"
-      ["a";"sigma"]
+      ["a";"alphabet"]
   in
   let default = CCString.of_list @@ CCOpt.get_exn @@ Regex.enumerate ' ' '~' in
   Arg.(value & opt string default & doc)

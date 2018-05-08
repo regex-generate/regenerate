@@ -7,4 +7,4 @@
 (alias
  ((name    runtest)
   (deps    (test_re.exe))
-  (action  (run ${<}))))
+  (action  (run ${<} -v --long))))

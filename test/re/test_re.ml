@@ -4,7 +4,8 @@ let () = Printexc.record_backtrace true
 
 let rec to_re = let open Regex in function
   | One -> Re.epsilon
-  | Set l -> Re.set @@ CCString.of_list l
+  | Set (true, l) -> Re.set @@ CCString.of_list l
+  | Set (false, l) -> Re.compl [Re.set @@ CCString.of_list l]
   | Seq (re, re') -> Re.seq [to_re re; to_re re']
   | Or (re, re') -> Re.alt [to_re re; to_re re']
   | And (re, re') -> Re.inter [to_re re; to_re re']
