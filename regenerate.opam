@@ -17,7 +17,7 @@ depends: [
   "qcheck"
   "re" {test}
 ]
-available: ocaml-version >= "4.02"
+available: ocaml-version >= "4.03"
 build: [
   ["jbuilder" "subst" "-n" name] {pinned}
   ["jbuilder" "build" "-p" name "-j" jobs "@install"]
