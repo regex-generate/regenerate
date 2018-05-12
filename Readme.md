@@ -57,5 +57,5 @@ simple [`js_of_ocaml`][jsoo] code.
 [web]: https://drup.github.io/regenerate/
 [ERE]: https://en.wikipedia.org/wiki/Regular_expression#Standards
 [jsoo]: http://ocsigen.org/js_of_ocaml
-[docdev]: https://drup.github.io/regenerate/doc/dev/Regenerate/
+[docdev]: https://drup.github.io/regenerate/doc/dev/regenerate/Regenerate/
 [qcheck]: https://github.com/c-cube/qcheck/
