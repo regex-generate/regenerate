@@ -112,9 +112,9 @@ let gen ~compl:with_compl alphabet =
       ] st
   and grep nbRep n =
     int_bound 3 >>= fun i ->
-    opt (int_bound 5) >>= fun j ->
+    opt (int_range i 5) >>= fun j ->
     gen (nbRep - 1) (n-1) >|= fun a ->
-    rep i (CCOpt.map ((+) i) j) a
+    rep i j a
   and gcompl nbRep n = gen nbRep (n-1) >|= compl
   and gbin nbRep n f =
     gen nbRep ((n-1)/2) >>= fun a ->
