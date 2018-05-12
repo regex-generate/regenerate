@@ -371,20 +371,24 @@ let arbitrary
   let gen st =
     let open QCheck.Gen in
     let re = Regex.gen ~compl (oneofl alphabet) st in
-    Fmt.epr "Re : %a@." (Regex.pp pp) re;
+    Fmt.epr "Regex: %a@." (Regex.pp pp) re;
+    let print_samples s l =
+      Fmt.epr "@[<2>%s:@ %a@]@." s Fmt.(list ~sep:(unit ",@ ") W.pp) l
+    in
     let lang = L.gen re in
-    let f l =
+    let f s l =
       l
       |> L.sample ~st ~skip ~n:samples
       |> CCFun.(%) ignore
       |> Sequence.to_list
+      |> CCFun.tap (print_samples s)
     in
-    let pos_examples = f lang in
-    let neg_examples = f @@ L.compl lang in
+    let pos_examples = f "Pos" lang in
+    let neg_examples = f "Neg" @@ L.compl lang in
     (re, pos_examples, neg_examples)
   in
   let pp fmt (x, l , l') =
-    Fmt.pf fmt "@[<2>re =@ %a@]@.@[<v2>pos =@ %a@]@.@[<v2>neg =@ %a@]"
+    Fmt.pf fmt "@[<2>Regex:@ %a@]@.@[<v2>Pos:@ %a@]@.@[<v2>Neg:@ %a@]"
       (Regex.pp pp) x   Fmt.(list W.pp) l   Fmt.(list W.pp) l'
   in
   let print = Fmt.to_to_string pp in
