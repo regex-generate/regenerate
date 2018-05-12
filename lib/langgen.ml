@@ -39,7 +39,7 @@ module[@inline always] Make
   module Sigma_star = struct
     type t = (Segment.t, CCVector.rw) CCVector.t 
 
-    let v = CCVector.make 1 segmentEpsilon
+    let v : t = CCVector.make 1 segmentEpsilon
 
     let rec complete_from_to i j =
       if i > j then ()

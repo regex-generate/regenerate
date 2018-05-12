@@ -1,9 +1,9 @@
-[Regenerate][web] [![Build Status](https://travis-ci.org/Drup/regenerate.svg?branch=master)](https://travis-ci.org/Drup/regenerate) [![Opam](https://img.shields.io/badge/opam-0.1-green.svg)](https://opam.ocaml.org/packages/regenerate/) [![doc](https://img.shields.io/badge/doc-online-green.svg)](https://drup.github.io/regenerate/doc/dev/)
+[Regenerate][web] [![Build Status](https://travis-ci.org/Drup/regenerate.svg?branch=master)](https://travis-ci.org/Drup/regenerate) [![Opam](https://img.shields.io/badge/opam-0.1-green.svg)](https://opam.ocaml.org/packages/regenerate/) [![doc](https://img.shields.io/badge/doc-online-green.svg)][docdev]
 ----------
 
 Regenerate is a tool to generate test-cases for regular expression engines.
 
-Regenerate takes a [*regular* expression][re] and generates strings that match it.
+Regenerate takes a [*regular* expression][regex] and generates strings that match it.
 It handles most posix extended regular expressions along with
 complement (`~a`) and intersection (`a&b`).
 Since it handles complement, it can also generate strings that
@@ -42,19 +42,20 @@ Please consult the help for more details, or play with the [online demo][web].
 The `regenerate` library allow to easily define test harnesses for regular expression engines. It contains utilities to randomly generate regular expressions and
 associated positive and negative samples. The main entry point of the library
 is the `Regenerate.arbitrary` function which exposes the sample generation as a 
-[qcheck](https://github.com/c-cube/qcheck/) generator.
+[qcheck][] generator.
 
 See [`test_re.ml`](test/re/test_re.ml) for an example test harness for
 [`re`](https://github.com/ocaml/ocaml-re). 
-You can also find (wip) [documentation for the dev version for the API][docdev].
+You can also find (wip) [documentation for the dev version of the API][docdev].
 
 ## Website
 
 Code for the online demo is hosted in the [web/](web) directory. It uses fairly
 simple [`js_of_ocaml`][jsoo] code.
 
-[re]: https://en.wikipedia.org/wiki/Regular_expression
+[regex]: https://en.wikipedia.org/wiki/Regular_expression
 [web]: https://drup.github.io/regenerate/
 [ERE]: https://en.wikipedia.org/wiki/Regular_expression#Standards
 [jsoo]: http://ocsigen.org/js_of_ocaml
-[docdev]: https://drup.github.io/regenerate/doc/dev/
+[docdev]: https://drup.github.io/regenerate/doc/dev/Regenerate/
+[qcheck]: https://github.com/c-cube/qcheck/

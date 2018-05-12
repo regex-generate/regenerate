@@ -1,8 +1,9 @@
-type 'a regex = 'a Regex.t
 module Regex = Regex
 module Word = Word
 module Segments = Segments
-
-include Langgen
+  
+type 'a regex = 'a Regex.t
 
 let parse = Parsing.parse
+
+include Langgen
