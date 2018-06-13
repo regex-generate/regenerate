@@ -25,7 +25,7 @@ DOCDIR=.gh-pages
 $(DOCDIR)/.git:
 	mkdir -p $(DOCDIR)
 	cd $(DOCDIR) && (\
-		git clone -b gh-pages git@github.com:Drup/$(NAME).git . \
+		git clone -b gh-pages git@github.com:regex-Generate/$(NAME).git . \
 	)
 
 gh-pages-index: $(DOCDIR)/.git web

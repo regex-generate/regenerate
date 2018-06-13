@@ -3,10 +3,10 @@ version: "dev"
 maintainer: "Drup <drupyog@zoho.com>"
 authors: "Drup <drupyog@zoho.com>"
 license: "ISC"
-homepage: "https://github.com/Drup/regenerate"
-bug-reports: "https://github.com/Drup/regenerate/issues"
-dev-repo: "git+https://github.com/Drup/regenerate.git"
-doc: "https://drup.github.io/regenerate/doc/dev/"
+homepage: "https://github.com/regex-generate/regenerate"
+bug-reports: "https://github.com/regex-generate/regenerate/issues"
+dev-repo: "git+https://github.com/regex-generate/regenerate.git"
+doc: "https://regex-generate.github.io/regenerate/doc/dev/"
 
 depends: [
   "jbuilder" {build}
