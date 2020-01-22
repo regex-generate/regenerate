@@ -4,20 +4,20 @@ prebuild:
 	@rm -f web/regenerate_web.bc.js
 
 web: prebuild
-	jbuilder build web/regenerate_web.bc.js
+	dune build web/regenerate_web.bc.js
 	@cp _build/default/web/regenerate_web.bc.js web/
 
 all: prebuild
-	jbuilder build @install --dev
+	dune build @install
 
 test: prebuild
-	jbuilder runtest
+	dune runtest -p release
 
 clean: prebuild
-	jbuilder clean
+	dune clean
 
 doc: prebuild
-	jbuilder build @doc
+	dune build @doc
 
 NAME=regenerate
 DOCDIR=.gh-pages

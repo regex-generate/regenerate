@@ -1,0 +1,6 @@
+(executable
+ (name regenerate_web)
+ (libraries regenerate js_of_ocaml)
+ (preprocess (pps js_of_ocaml.ppx))
+ (js_of_ocaml)
+)

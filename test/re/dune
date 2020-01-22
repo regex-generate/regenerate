@@ -1,0 +1,10 @@
+(executable
+ (name test_re)
+ (libraries regenerate regenerate.segments re)
+)
+
+(rule
+ (alias   runtest)
+ (deps    test_re.exe)
+ (action  (run ${<} -v --long))
+)

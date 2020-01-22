@@ -1,8 +1,0 @@
-(jbuild_version 1)
-
-(library
- ((name segments)
-  (public_name regenerate.segments)
-  (libraries (fmt sequence containers.data containers.iter oseq containers))
-  (ocamlopt_flags (:standard "-O3"))
-))
