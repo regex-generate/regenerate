@@ -64,7 +64,9 @@ module[@inline always] Make
   end
 
   let pp_item =
-    Fmt.parens @@ Fmt.hbox @@ Fmt.iter ~sep:(Fmt.unit ", ") (CCFun.flip Segment.to_seq) Word.pp
+    Fmt.parens @@
+    Fmt.hbox @@
+    Fmt.iter ~sep:(Fmt.unit ", ") (CCFun.flip Segment.to_seq) Word.pp
   let pp fmt (l : lang) =
     let pp_sep = Fmt.unit "@." in
     let rec pp fmt l = 
@@ -380,7 +382,7 @@ let arbitrary
       l
       |> L.sample ~st ~skip ~n:samples
       |> CCFun.(%) ignore
-      |> Sequence.to_list
+      |> Iter.to_list
       |> CCFun.tap (print_samples s)
     in
     let pos_examples = f "Pos" lang in

@@ -132,7 +132,7 @@ module Make
 
   (** {2 Operations on languages} *)
 
-  val flatten : lang -> Segment.elt Sequence.t
+  val flatten : lang -> Segment.elt Iter.t
   (** [flatten lang] returns the sequence of its segments. *)
 
   (** {3 Regular operations} *)

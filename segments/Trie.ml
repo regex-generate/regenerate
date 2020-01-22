@@ -3,8 +3,6 @@
 
 (** {1 Prefix Tree} *)
 
-type 'a sequence = ('a -> unit) -> unit
-
 (** {2 Signatures} *)
 
 (** {6 A Composite Word}
@@ -17,7 +15,7 @@ module type WORD = sig
 
   val compare_char : char -> char -> int
   val append : t -> t -> t
-  val to_seq : t -> char sequence
+  val to_seq : t -> char Iter.t
   val of_list : char list -> t
 end
 

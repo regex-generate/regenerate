@@ -17,7 +17,7 @@ module type S = sig
   val merge : t list -> t
 
   val of_list : elt list -> t
-  val to_seq : t -> elt Sequence.t
+  val to_seq : t -> elt Iter.t
 
   val memoize : t -> t
 end
