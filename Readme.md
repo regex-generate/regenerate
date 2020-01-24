@@ -1,4 +1,4 @@
-[Regenerate][web] [![Build Status](https://travis-ci.org/regex-generate/regenerate.svg?branch=master)](https://travis-ci.org/regex-generate/regenerate) [![Opam](https://img.shields.io/badge/opam-0.1-green.svg)](https://opam.ocaml.org/packages/regenerate/) [![doc](https://img.shields.io/badge/doc-online-green.svg)][docdev]
+[Regenerate][web] [![Build Status](https://travis-ci.org/regex-generate/regenerate.svg?branch=master)](https://travis-ci.org/regex-generate/regenerate) [![Opam](https://img.shields.io/badge/opam-0.2-green.svg)](https://opam.ocaml.org/packages/regenerate/) [![doc](https://img.shields.io/badge/doc-online-green.svg)][docdev]
 ----------
 
 Regenerate is a tool to generate test-cases for regular expression engines.

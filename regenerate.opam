@@ -6,7 +6,7 @@ license: "ISC"
 homepage: "https://github.com/regex-generate/regenerate"
 bug-reports: "https://github.com/regex-generate/regenerate/issues"
 dev-repo: "git+https://github.com/regex-generate/regenerate.git"
-doc: "https://regex-generate.github.io/regenerate/doc/dev/"
+doc: "https://regex-generate.github.io/regenerate/doc/0.2/"
 
 depends: [
   "dune" {build}
