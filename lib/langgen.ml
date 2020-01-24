@@ -66,7 +66,7 @@ module[@inline always] Make
   let pp_item =
     Fmt.parens @@
     Fmt.hbox @@
-    Fmt.iter ~sep:(Fmt.unit ", ") (CCFun.flip Segment.to_seq) Word.pp
+    Fmt.iter ~sep:(Fmt.unit ", ") (CCFun.flip Segment.to_iter) Word.pp
   let pp fmt (l : lang) =
     let pp_sep = Fmt.unit "@." in
     let rec pp fmt l = 
@@ -271,9 +271,9 @@ module[@inline always] Make
   let rec flatten_from n s k = match s () with
     | Nothing -> ()
     | Everything ->
-      Sigma_star.iter n (fun s -> Segment.to_seq s k)
+      Sigma_star.iter n (fun s -> Segment.to_iter s k)
     | Cons (x, s) ->
-      Segment.to_seq x k;
+      Segment.to_iter x k;
       flatten_from (n+1) s k
 
   let flatten s = flatten_from 0 s
@@ -335,7 +335,7 @@ module[@inline always] Make
     let rec walk_lang n seq =
       let i0 = !i in
       let next segm seq =
-        match Segment.to_seq segm onSegm with
+        match Segment.to_iter segm onSegm with
         | exception ExitSample -> Done
         | () ->
           let i1 = !i in

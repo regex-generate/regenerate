@@ -1,4 +1,6 @@
-module Make (K : Sigs.OrderedMonoid) = struct
+module Make (K : Sigs.OrderedMonoid)
+  : Sigs.S with type elt = K.t and type t = K.t OSeq.t
+= struct
   open OSeq
 
   type elt = K.t
@@ -8,8 +10,7 @@ module Make (K : Sigs.OrderedMonoid) = struct
   let is_empty = is_empty
   let of_list l = of_list @@ CCList.sort_uniq ~cmp:K.compare l
   let return = return
-  let to_seq x f = iter f x
-  let pp = pp
+  let to_iter x f = iter f x
   let memoize x = x
 
   type drop = Drop | Keep

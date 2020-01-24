@@ -2,7 +2,9 @@ module L = CCLazy_list
 
 let next = Lazy.force
 
-module Make (K : Sigs.OrderedMonoid) = struct
+module Make (K : Sigs.OrderedMonoid)
+  : Sigs.S with type elt = K.t and type t = K.t L.t
+= struct
 
   type elt = K.t
   type t = elt L.t
@@ -17,7 +19,7 @@ module Make (K : Sigs.OrderedMonoid) = struct
       | L.Cons (x, t) -> (f x; aux t)
       | Nil -> ()
     in aux l
-  let to_seq x f = iter f x
+  let to_iter x f = iter f x
       
       
   let memoize x = x

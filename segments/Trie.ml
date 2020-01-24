@@ -15,7 +15,7 @@ module type WORD = sig
 
   val compare_char : char -> char -> int
   val append : t -> t -> t
-  val to_seq : t -> char Iter.t
+  val to_iter : t -> char Iter.t
   val of_list : char list -> t
 end
 
@@ -80,11 +80,11 @@ module Make(W : WORD)
   
   (** Inserting/Removing *)
   
-  (* fold [f] on [seq] with accumulator [acc], and call [finish]
-     on the accumulator once [seq] is exhausted *)
-  let _fold_seq_and_then f ~finish acc seq =
+  (* fold [f] on [iter] with accumulator [acc], and call [finish]
+     on the accumulator once [iter] is exhausted *)
+  let _fold_iter_and_then f ~finish acc iter =
     let acc = ref acc in
-    seq (fun x -> acc := f !acc x);
+    iter (fun x -> acc := f !acc x);
     finish !acc
 
   let update key f t =
@@ -124,8 +124,8 @@ module Make(W : WORD)
       | Empty -> leaf_or_empty rebuild @@ None
       | Node map -> rebuild (_node map)
     in
-    let word = W.to_seq key in
-    _fold_seq_and_then goto ~finish (t, _id) word
+    let word = W.to_iter key in
+    _fold_iter_and_then goto ~finish (t, _id) word
 
   let add k v t = update k (fun _ -> Some v) t
   (* let remove k t = update k (fun _ -> None) t *)
@@ -307,7 +307,7 @@ module Make(W : WORD)
   let of_list l =
     List.fold_left (fun acc v -> add v () acc) empty l
 
-  let to_seq t k = iter (fun x () -> k x) t
+  let to_iter t k = iter (fun x () -> k x) t
 
   (** External API *)
 
@@ -326,7 +326,7 @@ module MakeArray(X : ORDERED) = Make(struct
     type char = X.t
     let append = Array.append
     let compare_char = X.compare
-    let to_seq a k = Array.iter k a
+    let to_iter a k = Array.iter k a
     let of_list = Array.of_list
   end)
 
@@ -335,7 +335,7 @@ module MakeList(X : ORDERED) = Make(struct
     type char = X.t
     let append = List.append
     let compare_char = X.compare
-    let to_seq a k = List.iter k a
+    let to_iter a k = List.iter k a
     let of_list l = l
   end)
 
@@ -344,7 +344,7 @@ module String = Make(struct
     type nonrec char = char
     let append = (^)
     let compare_char = Char.compare
-    let to_seq s k = String.iter k s
+    let to_iter s k = String.iter k s
     let of_list l =
       let buf = Buffer.create (List.length l) in
       List.iter (fun c -> Buffer.add_char buf c) l;

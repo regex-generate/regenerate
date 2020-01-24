@@ -1,4 +1,6 @@
-module Make (K : Sigs.OrderedMonoid) = struct
+module Make (K : Sigs.OrderedMonoid) 
+  : Sigs.S with type elt = K.t and type t = ThunkList.Make(K).t
+= struct
   open OSeq
   include ThunkList.Make(K)
       
