@@ -1,5 +1,5 @@
-opam-version: "1.2"
-version: "dev"
+opam-version: "2.0"
+version: "0.2"
 maintainer: "Drup <drupyog@zoho.com>"
 authors: "Drup <drupyog@zoho.com>"
 license: "ISC"
@@ -9,21 +9,27 @@ dev-repo: "git+https://github.com/regex-generate/regenerate.git"
 doc: "https://regex-generate.github.io/regenerate/doc/dev/"
 
 depends: [
-  "jbuilder" {build}
+  "dune" {build}
   "cmdliner"
   "fmt"
   "containers"
   "mtime"
   "oseq"
-  "sequence"
+  "iter"
   "qcheck"
-  "re" {test}
+  "re" {with-test}
+  "ocaml" {>= "4.03"}
 ]
-available: ocaml-version >= "4.03"
 build: [
-  ["jbuilder" "subst" "-n" name] {pinned}
-  ["jbuilder" "build" "-p" name "-j" jobs "@install"]
+  ["dune" "subst"] {pinned}
+  ["dune" "build" "-p" name "-j" jobs]
+  ["dune" "runtest" "-p" name "-j" jobs] {with-test}
 ]
-build-test: [
-  ["jbuilder" "runtest" "-p" name]
-]
+synopsis:
+  "Regenerate is a tool to generate test-cases for regular expression engines"
+description: """
+Regenerate takes a regular expression and generates strings that match it.
+It handles most posix extended regular expressions along with
+complement (~a) and intersection (a&b).
+Since it handles complement, it can also generate strings that
+*don't* match a given regular expression."""
