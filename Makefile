@@ -11,7 +11,7 @@ all: prebuild
 	dune build @install
 
 test: prebuild
-	dune runtest -p release
+	dune runtest --profile release
 
 clean: prebuild
 	dune clean
