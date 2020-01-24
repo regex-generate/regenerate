@@ -45,7 +45,7 @@ let[@inline] make_impl ~impl =
       | All -> A.flatten lang
       | Sample { skip ; length } ->
         CCFun.(%) ignore @@ A.sample ~skip ?n:length lang
-      | Take n -> Sequence.take n @@ A.flatten lang
+      | Take n -> Iter.take n @@ A.flatten lang
 
 let tl = make_impl ~impl:ThunkList ~sigma:"ab"
 let tlm = make_impl ~impl:ThunkListMemo ~sigma:"ab"
@@ -143,7 +143,7 @@ let count impl sigma re n =
   let c = Mtime_clock.counter () in
   let i =
     setup ~impl ~sigma (Take n) re
-    |> Sequence.length
+    |> Iter.length
   in
   Fmt.pr "Max count: %i@.Actual Count: %i@.Time: %a@." n i
     Mtime.Span.pp (Mtime_clock.count c)
@@ -164,7 +164,7 @@ let measure_until ~limit ~interval oc lang =
       else ()
     end
   in
-  (try Sequence.iter f lang with Exit -> ());
+  (try Iter.iter f lang with Exit -> ());
   close_out oc ;
   ()
 

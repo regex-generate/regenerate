@@ -1,6 +1,6 @@
 (library
  (name regenerate)
  (public_name regenerate)
- (libraries segments fmt sequence qcheck containers)
+ (libraries segments fmt iter qcheck containers)
  (ocamlopt_flags :standard "-O3" "-inlining-report")
 )

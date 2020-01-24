@@ -52,7 +52,7 @@ let time_up_to_gen n lang =
   let i = lang
           |> take n
           |> L.flatten
-          |> Sequence.length
+          |> Iter.length
   in
   Fmt.pr "Max length: %i@.Count: %i@.Time: %a@." n i
     Mtime.Span.pp (Mtime_clock.elapsed())
@@ -60,8 +60,8 @@ let time_up_to_gen n lang =
 let time_up_to_length n lang =
   let i = lang
           |> L.flatten
-          |> Sequence.take n
-          |> Sequence.length
+          |> Iter.take n
+          |> Iter.length
   in
   Fmt.pr "Max count: %i@.Actual Count: %i@.Time: %a@." n i
     Mtime.Span.pp (Mtime_clock.elapsed())
@@ -81,7 +81,7 @@ let measure_until ~limit ~interval oc lang =
       else output i t
     end
   in
-  (try Sequence.iter f (L.flatten lang) with Exit -> ());
+  (try Iter.iter f (L.flatten lang) with Exit -> ());
   close_out oc ;
   !r
                                                     
