@@ -10,10 +10,10 @@ doc: "https://regex-generate.github.io/regenerate/doc/0.2/"
 
 depends: [
   "dune" {build}
-  "cmdliner"
-  "fmt"
-  "containers"
-  "mtime"
+  "cmdliner" {= "1.0.4"}
+  "fmt" {= "0.8.0"}
+  "containers" {= "2.8.1"}
+  "mtime" {= "1.4.0"}
   "oseq"
   "iter"
   "qcheck"
